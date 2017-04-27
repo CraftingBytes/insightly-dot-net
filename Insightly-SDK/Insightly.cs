@@ -17,6 +17,7 @@ namespace InsightlySDK{
 	/// Represents errors that occur during application execution.
 	/// </exception>
 	public class Insightly{
+		static string version = "v2.2";
 		/// <summary>
 		/// Initializes a new instance of the <see cref="InsightlySDK.Insightly"/> class.
 		/// </summary>
@@ -37,7 +38,8 @@ namespace InsightlySDK{
 		/// ID of object to get comments of
 		/// </param>
 		public JArray GetComments(int id){
-			return this.Get("/v2.1/Comments/" + id).AsJson<JArray>();
+
+			return this.Get($"/{version}/Comments/" + id).AsJson<JArray>();
 		}
 		
 		/// <summary>
@@ -47,7 +49,7 @@ namespace InsightlySDK{
 		/// ID of object to delete
 		/// </param>
 		public void DeleteComment(int id){
-			this.Delete("/v2.1/Comments/" + id).AsString();
+			this.Delete($"/{version}/Comments/" + id).AsString();
 		}
 
 		/// <summary>
@@ -82,7 +84,7 @@ namespace InsightlySDK{
 				data["COMMENT_ID"] = comment_id;
 			}
 			
-			return this.Put("/v2.1/Comments").WithBody(data).AsJson<JObject>();
+			return this.Put($"/{version}/Comments").WithBody(data).AsJson<JObject>();
 		}
 		
 		/// <summary>
@@ -115,7 +117,7 @@ namespace InsightlySDK{
 		/// </param>
 		public JArray GetContacts(List<int> ids=null, string email=null, string tag=null,
 		                          List<string> filters=null, int? top=null, int? skip=null, string order_by=null){
-			var request = this.Get("/v2.1/Contacts");
+			var request = this.Get($"/{version}/Contacts");
 			BuildODataQuery(request, filters: filters, top: top, skip: skip, order_by: order_by);
 			if(ids != null){
 				request.WithQueryParam("ids", ids);
@@ -139,7 +141,7 @@ namespace InsightlySDK{
 		/// CONTACT_ID of desired contact.
 		/// </param>
 		public JObject GetContact(int id){
-			return this.Get("/v2.1/Contacts/" + id).AsJson<JObject>();
+			return this.Get($"/{version}/Contacts/" + id).AsJson<JObject>();
 		}
 		
 		/// <summary>
@@ -155,7 +157,7 @@ namespace InsightlySDK{
 		/// Otherwise, the contact with that id will be updated.
 		/// </param>
 		public JObject AddContact(JObject contact){
-			var request = this.Request("/v2.1/Contacts");
+			var request = this.Request($"/{version}/Contacts");
 			
 			if((contact["CONTACT_ID"] != null) && (contact["CONTACT_ID"].Value<int>() > 0)){
 				request.WithMethod(HTTPMethod.PUT);
@@ -174,7 +176,7 @@ namespace InsightlySDK{
 		/// CONTACT_ID of the contact to be deleted.
 		/// </param>
 		public void DeleteContact(int id){
-			this.Delete("/v2.1/Contacts/" + id).AsString();
+			this.Delete($"/{version}/Contacts/" + id).AsString();
 		}
 
 		/// <summary>
@@ -187,7 +189,7 @@ namespace InsightlySDK{
 		/// A contact's CONTACT_ID
 		/// </param>
 		public JArray GetContactEmails(int contact_id){
-			return this.Get("/v2.1/Contacts/" + contact_id + "/Emails")
+			return this.Get($"/{version}/Contacts/" + contact_id + "/Emails")
 				.AsJson<JArray>();
 		}
 		
@@ -201,7 +203,7 @@ namespace InsightlySDK{
 		/// A contact's CONTACT_ID.
 		/// </param>
 		public JArray GetContactNotes(int contact_id){
-			return this.Get("/v2.1/Contacts/" + contact_id + "/Notes")
+			return this.Get($"/{version}/Contacts/" + contact_id + "/Notes")
 				.AsJson<JArray>();
 		}
 		
@@ -215,7 +217,7 @@ namespace InsightlySDK{
 		/// A contact's CONTACT_ID.
 		/// </param>
 		public JArray GetContactTasks(int contact_id){
-			return this.Get("/v2.1/Contacts/" + contact_id + "/Tasks")
+			return this.Get($"/{version}/Contacts/" + contact_id + "/Tasks")
 				.AsJson<JArray>();
 		}
 		
@@ -226,7 +228,7 @@ namespace InsightlySDK{
 		/// The countries recognized by Insightly.
 		/// </returns>
 		public JArray GetCountries(){
-			return this.Get("/v2.1/Countries").AsJson<JArray>();
+			return this.Get($"/{version}/Countries").AsJson<JArray>();
 		}
 		
 		/// <summary>
@@ -236,7 +238,7 @@ namespace InsightlySDK{
 		/// The currencies recognized by Insightly.
 		/// </returns>
 		public JArray GetCurrencies(){
-			return this.Get("/v2.1/Currencies").AsJson<JArray>();
+			return this.Get($"/{version}/Currencies").AsJson<JArray>();
 		}
 		
 		/// <summary>
@@ -246,7 +248,7 @@ namespace InsightlySDK{
 		/// The custom fields.
 		/// </returns>
 		public JArray GetCustomFields(){
-			return this.Get ("/v2.1/CustomFields").AsJson<JArray>();
+			return this.Get ($"/{version}/CustomFields").AsJson<JArray>();
 		}
 		
 		/// <summary>
@@ -259,7 +261,7 @@ namespace InsightlySDK{
 		/// Custom field id.
 		/// </param>
 		public JObject GetCustomField(int id){
-			return this.Get ("/v2.1/CustomFields/" + id).AsJson<JObject>();
+			return this.Get ($"/{version}/CustomFields/" + id).AsJson<JObject>();
 		}
 		
 		/// <summary>
@@ -282,7 +284,7 @@ namespace InsightlySDK{
 		/// </param>
 		public JArray GetEmails(int? top=null, int? skip=null,
 		                        string order_by=null, List<string> filters=null){
-			var request = this.Get("/v2.1/Emails");
+			var request = this.Get($"/{version}/Emails");
 			BuildODataQuery(request, top: top, skip: skip, order_by: order_by, filters: filters);
 			return request.AsJson<JArray>();
 		}
@@ -297,7 +299,7 @@ namespace InsightlySDK{
 		/// ID of email to get.
 		/// </param>
 		public JObject GetEmail(int id){
-			return this.Get("/v2.1/Emails/" + id).AsJson<JObject>();
+			return this.Get($"/{version}/Emails/" + id).AsJson<JObject>();
 		}
 		
 		/// <summary>
@@ -307,7 +309,7 @@ namespace InsightlySDK{
 		/// ID of email to delete.
 		/// </param>
 		public void DeleteEmail(int id){
-			this.Delete("/v2.1/Emails/" + id).AsString();
+			this.Delete($"/{version}/Emails/" + id).AsString();
 		}
 		
 		/// <summary>
@@ -320,7 +322,7 @@ namespace InsightlySDK{
 		/// Email id.
 		/// </param>
 		public JArray GetEmailComments(int email_id){
-			return this.Get ("/v2.1/Emails/" + email_id + "/Comments").AsJson<JArray>();
+			return this.Get ($"/{version}/Emails/" + email_id + "/Comments").AsJson<JArray>();
 		}
 		
 		/// <summary>
@@ -342,7 +344,7 @@ namespace InsightlySDK{
 			var data = new JObject();
 			data["BODY"] = body;
 			data["OWNER_USER_ID"] = owner_user_id;
-			return this.Post("/v2.1/Emails/" + email_id + "/Comments")
+			return this.Post($"/{version}/Emails/" + email_id + "/Comments")
 				.WithBody(data).AsJson<JObject>();
 		}
 		
@@ -366,7 +368,7 @@ namespace InsightlySDK{
 		/// </param>
 		public JArray GetEvents(int? top=null, int? skip=null,
 		                        string order_by=null, List<string> filters=null){
-			var request = this.Get("/v2.1/Events");
+			var request = this.Get($"/{version}/Events");
 			BuildODataQuery(request, top: top, skip: skip, order_by: order_by, filters: filters);
 			return request.AsJson<JArray>();
 		}
@@ -381,7 +383,7 @@ namespace InsightlySDK{
 		/// EVENT_ID of the desired event.
 		/// </param>
 		public JObject GetEvent(int id){
-			return this.Get("/v2.1/Events/" + id).AsJson<JObject>();
+			return this.Get($"/{version}/Events/" + id).AsJson<JObject>();
 		}
 		
 		/// <summary>
@@ -394,7 +396,7 @@ namespace InsightlySDK{
 		/// The event to add/update.
 		/// </param>
 		public JObject AddEvent(JObject the_event){
-			var request = Request("/v2.1/Events");
+			var request = Request($"/{version}/Events");
 			
 			if((the_event["EVENT_ID"] != null) && (the_event["EVENT_ID"].Value<int>() > 0)){
 				request.WithMethod(HTTPMethod.PUT);
@@ -413,7 +415,7 @@ namespace InsightlySDK{
 		/// ID of the event to be deleted.
 		/// </param>
 		public void DeleteEvent(int id){
-			this.Delete("/v2.1/Events/" + id).AsString();
+			this.Delete($"/{version}/Events/" + id).AsString();
 		}
 
 		/// <summary>
@@ -423,7 +425,7 @@ namespace InsightlySDK{
 		/// The file categories for this account.
 		/// </returns>
 		public JArray GetFileCategories(){
-			return this.Get("/v2.1/FileCategories").AsJson<JArray>();
+			return this.Get($"/{version}/FileCategories").AsJson<JArray>();
 		}
 		
 		/// <summary>
@@ -436,7 +438,7 @@ namespace InsightlySDK{
 		/// CATEGORY_ID of desired category.
 		/// </param>
 		public JObject GetFileCategory(int id){
-			return this.Get("/v2.1/FileCategories/" + id).AsJson<JObject>();
+			return this.Get($"/{version}/FileCategories/" + id).AsJson<JObject>();
 		}
 		
 		/// <summary>
@@ -449,7 +451,7 @@ namespace InsightlySDK{
 		/// The category to add/update.
 		/// </param>
 		public JObject AddFileCategory(JObject category){
-			var request = this.Request("/v2.1/FileCategories");
+			var request = this.Request($"/{version}/FileCategories");
 			
 			if((category["CATEGORY_ID"] != null) && (category["CATEGORY_ID"].Value<int>() > 0)){
 				request.WithMethod(HTTPMethod.PUT);
@@ -468,7 +470,7 @@ namespace InsightlySDK{
 		/// CATEGORY_ID of the file category to delete.
 		/// </param>
 		public void DeleteFileCategory(int id){
-			this.Delete("/v2.1/FileCategories/" + id).AsString();
+			this.Delete($"/{version}/FileCategories/" + id).AsString();
 		}
 		
 		/// <summary>
@@ -491,7 +493,7 @@ namespace InsightlySDK{
 		/// </param>
 		public JArray GetNotes(int? top=null, int? skip=null,
 		                       string order_by=null, List<string> filters=null){
-			var request = this.Get("/v2.1/Notes");
+			var request = this.Get($"/{version}/Notes");
 			BuildODataQuery(request, top: top, skip: skip, order_by: order_by, filters: filters);
 			return request.AsJson<JArray>();
 		}
@@ -506,7 +508,7 @@ namespace InsightlySDK{
 		/// <c>NOTE_ID</c> of desired note.
 		/// </param>
 		public JObject GetNote(int id){
-			return this.Get("/v2.1/Notes/" + id).AsJson<JObject>();
+			return this.Get($"/{version}/Notes/" + id).AsJson<JObject>();
 		}
 
 		/// <summary>
@@ -519,7 +521,7 @@ namespace InsightlySDK{
 		/// The note object to add or update.
 		/// </param>
 		public JObject AddNote(JObject note){
-			var request = this.Request("/v2.1/Notes");
+			var request = this.Request($"/{version}/Notes");
 			
 			if(IsValidId(note["NOTE_ID"])){
 				request.WithMethod(HTTPMethod.PUT);
@@ -538,7 +540,7 @@ namespace InsightlySDK{
 		/// NOTE_ID of note to delete.
 		/// </param>
 		public void DeleteNote(int id){
-			this.Delete("/v2.1/Notes/" + id).AsString();
+			this.Delete($"/{version}/Notes/" + id).AsString();
 		}
 		
 		/// <summary>
@@ -551,7 +553,7 @@ namespace InsightlySDK{
 		/// <c>NOTE_ID</c> of desired note.
 		/// </param>
 		public JObject GetNoteComments(int note_id){
-			return this.Get("/v2.1/Notes/" + note_id + "/Comments")
+			return this.Get($"/{version}/Notes/" + note_id + "/Comments")
 				.AsJson<JObject>();
 		}
 		
@@ -568,7 +570,7 @@ namespace InsightlySDK{
 		/// The comment to attach to the note.
 		/// </param>
 		public JObject AddNoteComment(int note_id, JObject comment){
-			return this.Post("/v2.1/Notes/" + note_id + "/Comments")
+			return this.Post($"/{version}/Notes/" + note_id + "/Comments")
 				.WithBody(comment).AsJson<JObject>();
 		}
 		
@@ -592,7 +594,7 @@ namespace InsightlySDK{
 		/// </param>
 		public JArray GetOpportunities(int? top=null, int? skip=null,
 		                               string order_by=null, List<string> filters=null){
-			var request = this.Get("/v2.1/Opportunities");
+			var request = this.Get($"/{version}/Opportunities");
 			BuildODataQuery(request, top: top, skip: skip, order_by: order_by, filters: filters);
 			return request.AsJson<JArray>();
 		}
@@ -607,7 +609,7 @@ namespace InsightlySDK{
 		/// OPPORTUNITY_ID of desired opportunity.
 		/// </param>
 		public JObject GetOpportunity(int id){
-			return this.Get("/v2.1/Opportunities/" + id).AsJson<JObject>();
+			return this.Get($"/{version}/Opportunities/" + id).AsJson<JObject>();
 		}
 		
 		/// <summary>
@@ -620,7 +622,7 @@ namespace InsightlySDK{
 		/// The opportunity to add/update.
 		/// </param>
 		public JObject AddOpportunity(JObject opportunity){
-			var request = this.Request("/v2.1/Opportunities");
+			var request = this.Request($"/{version}/Opportunities");
 			
 			if(IsValidId(opportunity["OPPORTUNITY_ID"])){
 				request.WithMethod(HTTPMethod.PUT);
@@ -639,7 +641,7 @@ namespace InsightlySDK{
 		/// OPPORTUNITY_ID of opportunity to delete.
 		/// </param>
 		public void DeleteOpportunity(int id){
-			this.Delete("/v2.1/Opportunities/" + id).AsString();
+			this.Delete($"/{version}/Opportunities/" + id).AsString();
 		}
 		
 		/// <summary>
@@ -652,7 +654,7 @@ namespace InsightlySDK{
 		/// OPPORTUNITY_ID of opportunity to get history of.
 		/// </param>
 		public JArray GetOpportunityStateHistory(int opportunity_id){
-			return this.Get("/v2.1/Opportunities/" + opportunity_id + "/StateHistory")
+			return this.Get($"/{version}/Opportunities/" + opportunity_id + "/StateHistory")
 				.AsJson<JArray>();
 		}
 
@@ -666,7 +668,7 @@ namespace InsightlySDK{
 		/// OPPORTUNITY_ID of desired opportunity.
 		/// </param>
 		public JArray GetOpportunityEmails(int opportunity_id){
-			return this.Get("/v2.1/Opportunities/" + opportunity_id + "/Emails")
+			return this.Get($"/{version}/Opportunities/" + opportunity_id + "/Emails")
 				.AsJson<JArray>();
 		}
 		
@@ -680,7 +682,7 @@ namespace InsightlySDK{
 		/// OPPORTUNITY_ID of desired opportunity.
 		/// </param>
 		public JArray GetOpportunityNotes(int opportunity_id){
-			return this.Get("/v2.1/Opportunities/" + opportunity_id + "/Notes")
+			return this.Get($"/{version}/Opportunities/" + opportunity_id + "/Notes")
 				.AsJson<JArray>();
 		}
 		
@@ -694,7 +696,7 @@ namespace InsightlySDK{
 		/// OPPORTUNITY_ID of desired opportunity.
 		/// </param>
 		public JArray GetOpportunityTasks(int opportunity_id){
-			return this.Get("/v2.1/Opportunities/" + opportunity_id + "/Tasks")
+			return this.Get($"/{version}/Opportunities/" + opportunity_id + "/Tasks")
 				.AsJson<JArray>();
 		}
 		
@@ -705,7 +707,7 @@ namespace InsightlySDK{
 		/// The opportunity categories.
 		/// </returns>
 		public JArray GetOpportunityCategories(){
-			return this.Get("/v2.1/OpportunityCategories")
+			return this.Get($"/{version}/OpportunityCategories")
 				.AsJson<JArray>();
 		}
 		
@@ -719,7 +721,7 @@ namespace InsightlySDK{
 		/// CATEGORY_ID of desired opportunity category.
 		/// </param>
 		public JObject GetOpportunityCategoriy(int id){
-			return this.Get("/v2.1/OpportunityCategories/" + id)
+			return this.Get($"/{version}/OpportunityCategories/" + id)
 				.AsJson<JObject>();
 		}
 		
@@ -733,7 +735,7 @@ namespace InsightlySDK{
 		/// The category to add/update.
 		/// </param>
 		public JObject AddOpportunityCategory(JObject category){
-			var request = this.Request("/v2.1/OpportunityCategories");
+			var request = this.Request($"/{version}/OpportunityCategories");
 			
 			if(IsValidId(category["CATEGORY_ID"])){
 				request.WithMethod(HTTPMethod.PUT);
@@ -752,7 +754,7 @@ namespace InsightlySDK{
 		/// CATEGORY_ID of opportunity category to delete.
 		/// </param>
 		public void DeleteOpportunityCategory(int id){
-			this.Delete("/v2.1/OpportunityCategories/" + id).AsString();
+			this.Delete($"/{version}/OpportunityCategories/" + id).AsString();
 		}
 		
 		/// <summary>
@@ -762,7 +764,7 @@ namespace InsightlySDK{
 		/// The opportunity state reasons.
 		/// </returns>
 		public JArray GetOpportunityStateReasons(){
-			return this.Get("/v2.1/OpportunityStateReasons")
+			return this.Get($"/{version}/OpportunityStateReasons")
 				.AsJson<JArray>();
 		}
 		
@@ -795,7 +797,7 @@ namespace InsightlySDK{
 		/// </param>
 		public JArray GetOrganizations(List<int> ids=null, string domain=null, string tag=null,
 		                               int? top=null, int? skip=null, string order_by=null, List<string> filters=null){
-			var request = this.Get("/v2.1/Organisations");
+			var request = this.Get($"/{version}/Organisations");
 			BuildODataQuery(request, top: top, skip: skip, order_by: order_by, filters: filters);
 			
 			if(domain != null){
@@ -821,7 +823,7 @@ namespace InsightlySDK{
 		/// <c>ORGANISATION_ID</c> of desired organization.
 		/// </param>
 		public JObject GetOrganization(int id){
-			return this.Get("/v2.1/Organisations/" + id).AsJson<JObject>();
+			return this.Get($"/{version}/Organisations/" + id).AsJson<JObject>();
 		}
 
 		/// <summary>
@@ -834,7 +836,7 @@ namespace InsightlySDK{
 		/// Organization to add/update.
 		/// </param>
 		public JObject AddOrganization(JObject organization){
-			var request = this.Request("/v2.1/Organisations");
+			var request = this.Request($"/{version}/Organisations");
 			
 			if(IsValidId(organization["ORGANISATION_ID"])){
 				request.WithMethod(HTTPMethod.PUT);
@@ -853,7 +855,7 @@ namespace InsightlySDK{
 		/// <c>ORGANISATION_ID</c> of organization to delete.
 		/// </param>
 		public void DeleteOrganization(int id){
-			this.Delete("/v2.1/Organisations/" + id).AsString();
+			this.Delete($"/{version}/Organisations/" + id).AsString();
 		}
 
 		/// <summary>
@@ -866,7 +868,7 @@ namespace InsightlySDK{
 		/// <c>ORGANISATION_ID</c> of desired organization.
 		/// </param>
 		public JArray GetOrganizationEmails(int organization_id){
-			return this.Get("/v2.1/Organisations/" + organization_id + "/Emails")
+			return this.Get($"/{version}/Organisations/" + organization_id + "/Emails")
 				.AsJson<JArray>();
 		}
 
@@ -880,7 +882,7 @@ namespace InsightlySDK{
 		/// <c>ORGANISATION_ID</c> of desired organization.
 		/// </param>
 		public JArray GetOrganizationNotes(int organization_id){
-			return this.Get("/v2.1/Organisations/" + organization_id + "/Notes")
+			return this.Get($"/{version}/Organisations/" + organization_id + "/Notes")
 				.AsJson<JArray>();
 		}
 
@@ -894,7 +896,7 @@ namespace InsightlySDK{
 		/// <c>ORGANISATION_ID</c> of desired organization.
 		/// </param>
 		public JArray GetOrganizationTasks(int organization_id){
-			return this.Get("/v2.1/Organisations/" + organization_id + "/Tasks")
+			return this.Get($"/{version}/Organisations/" + organization_id + "/Tasks")
 				.AsJson<JArray>();
 		}
 		
@@ -905,7 +907,7 @@ namespace InsightlySDK{
 		/// The pipelines.
 		/// </returns>
 		public JArray GetPipelines(){
-			return this.Get("/v2.1/Pipelines").AsJson<JArray>();
+			return this.Get($"/{version}/Pipelines").AsJson<JArray>();
 		}
 		
 		/// <summary>
@@ -918,7 +920,7 @@ namespace InsightlySDK{
 		/// Pipeline id.
 		/// </param>
 		public JObject GetPipeline(int id){
-			return this.Get("/v2.1/Pipelines/" + id).AsJson<JObject>();
+			return this.Get($"/{version}/Pipelines/" + id).AsJson<JObject>();
 		}
 		
 		/// <summary>
@@ -928,7 +930,7 @@ namespace InsightlySDK{
 		/// The pipeline stages.
 		/// </returns>
 		public JArray GetPipelineStages(){
-			return this.Get("/v2.1/PipelineStages").AsJson<JArray>();
+			return this.Get($"/{version}/PipelineStages").AsJson<JArray>();
 		}
 		
 		/// <summary>
@@ -951,7 +953,7 @@ namespace InsightlySDK{
 		/// The project categories.
 		/// </returns>
 		public JArray GetProjectCategories(){
-			return this.Get("/v2.1/ProjectCategories").AsJson<JArray>();
+			return this.Get($"/{version}/ProjectCategories").AsJson<JArray>();
 		}
 		
 		/// <summary>
@@ -964,7 +966,7 @@ namespace InsightlySDK{
 		/// <c>CATEGORY_ID</c> of desired category.
 		/// </param>
 		public JObject GetProjectCategory(int id){
-			return this.Get("/v2.1/ProjectCategories/" + id).AsJson<JObject>();
+			return this.Get($"/{version}/ProjectCategories/" + id).AsJson<JObject>();
 		}
 
 		/// <summary>
@@ -977,7 +979,7 @@ namespace InsightlySDK{
 		/// The category to add/update.
 		/// </param>
 		public JObject AddProjectCategory(JObject category){
-			var request = this.Request("/v2.1/ProjectCategories");
+			var request = this.Request($"/{version}/ProjectCategories");
 			
 			if(IsValidId(category["CATEGORY_ID"])){
 				request.WithMethod(HTTPMethod.PUT);
@@ -996,7 +998,7 @@ namespace InsightlySDK{
 		/// <c>CATEGORY_ID</c> of category to be deleted.
 		/// </param>
 		public void DeleteProjectCategory(int id){
-			this.Delete("/v2.1/ProjectCategories/" + id).AsString();
+			this.Delete($"/{version}/ProjectCategories/" + id).AsString();
 		}
 		
 		/// <summary>
@@ -1019,7 +1021,7 @@ namespace InsightlySDK{
 		/// </param>
 		public JArray GetProjects(int? top=null, int? skip=null,
 		                          string order_by = null, List<string> filters=null){
-			var request = this.Get("/v2.1/Projects");
+			var request = this.Get($"/{version}/Projects");
 			BuildODataQuery(request, top: top, skip: skip, order_by: order_by, filters: filters);
 			return request.AsJson<JArray>();
 		}
@@ -1034,7 +1036,7 @@ namespace InsightlySDK{
 		/// <c>PROJECT_ID</c> of desired project.
 		/// </param>
 		public JObject GetProject(int id){
-			return this.Get("/v2.1/Projects/" + id).AsJson<JObject>();
+			return this.Get($"/{version}/Projects/" + id).AsJson<JObject>();
 		}
 		
 		/// <summary>
@@ -1047,7 +1049,7 @@ namespace InsightlySDK{
 		/// Project to add/update.
 		/// </param>
 		public JObject AddProject(JObject project){
-			var request = this.Request("/v2.1/Projects");
+			var request = this.Request($"/{version}/Projects");
 			
 			if(IsValidId(project["PROJECT_ID"])){
 				request.WithMethod(HTTPMethod.PUT);
@@ -1066,7 +1068,7 @@ namespace InsightlySDK{
 		/// <c>PROJECT_ID</c> of project to be deleted.
 		/// </param>
 		public void DeleteProject(int id){
-			this.Delete("/v2.1/Projects/" + id).AsString();
+			this.Delete($"/{version}/Projects/" + id).AsString();
 		}
 		
 		/// <summary>
@@ -1079,7 +1081,7 @@ namespace InsightlySDK{
 		/// <c>PROJECT_ID</c> of desired project.
 		/// </param>
 		public JArray GetProjectEmails(int project_id){
-			return this.Get("/v2.1/Projects/" + project_id + "/Emails")
+			return this.Get($"/{version}/Projects/" + project_id + "/Emails")
 				.AsJson<JArray>();
 		}
 		
@@ -1093,7 +1095,7 @@ namespace InsightlySDK{
 		/// <c>PROJECT_ID</c> of desired project.
 		/// </param>
 		public JArray GetProjectNotes(int project_id){
-			return this.Get("/v2.1/Projects/" + project_id + "/Notes")
+			return this.Get($"/{version}/Projects/" + project_id + "/Notes")
 				.AsJson<JArray>();
 		}
 
@@ -1107,7 +1109,7 @@ namespace InsightlySDK{
 		/// <c>PROJECT_ID</c> of desired project.
 		/// </param>
 		public JArray GetProjectTasks(int project_id){
-			return this.Get("/v2.1/Projects/" + project_id + "/Tasks")
+			return this.Get($"/{version}/Projects/" + project_id + "/Tasks")
 				.AsJson<JArray>();
 		}
 		
@@ -1118,7 +1120,7 @@ namespace InsightlySDK{
 		/// The relationships.
 		/// </returns>
 		public JArray GetRelationships(){
-			return this.Get("/v2.1/Relationships").AsJson<JArray>();
+			return this.Get($"/{version}/Relationships").AsJson<JArray>();
 		}
 		
 		/// <summary>
@@ -1131,7 +1133,7 @@ namespace InsightlySDK{
 		/// The id of the parent object.
 		/// </param>
 		public JArray GetTags(int parent_id){
-			return this.Get("/v2.1/Tags/" + parent_id).AsJson<JArray>();
+			return this.Get($"/{version}/Tags/" + parent_id).AsJson<JArray>();
 		}
 		
 		/// <summary>
@@ -1157,7 +1159,7 @@ namespace InsightlySDK{
 		/// </param>
 		public JArray GetTasks(List<int> ids=null, int? top=null, int? skip=null,
 		                       string order_by=null, List<string> filters=null){
-			var request = this.Get("/v2.1/Tasks");
+			var request = this.Get($"/{version}/Tasks");
 			BuildODataQuery(request, top: top, skip: skip, order_by: order_by, filters: filters);
 			
 			if((ids != null) && (ids.Count > 0)){
@@ -1177,7 +1179,7 @@ namespace InsightlySDK{
 		/// <c>TASK_ID</c> of desired task.
 		/// </param>
 		public JObject GetTask(int id){
-			return this.Get("/v2.1/Tasks/" + id).AsJson<JObject>();
+			return this.Get($"/{version}/Tasks/" + id).AsJson<JObject>();
 		}
 		
 		/// <summary>
@@ -1190,7 +1192,7 @@ namespace InsightlySDK{
 		/// The task to create/update.
 		/// </param>
 		public JObject AddTask(JObject task){
-			var request = this.Request("/v2.1/Tasks");
+			var request = this.Request($"/{version}/Tasks");
 			
 			if(IsValidId(task["TASK_ID"])){
 				request.WithMethod(HTTPMethod.PUT);
@@ -1209,7 +1211,7 @@ namespace InsightlySDK{
 		/// <c>TASK_ID</c> of task to delete.
 		/// </param>
 		public void DeleteTask(int id){
-			this.Delete("/v2.1/Tasks/" + id).ToString();
+			this.Delete($"/{version}/Tasks/" + id).ToString();
 		}
 		
 		
@@ -1223,7 +1225,7 @@ namespace InsightlySDK{
 		/// <c>TASK_ID</c> of desired task.
 		/// </param>
 		public JArray GetTaskComments(int task_id){
-			return this.Get("/v2.1/Tasks/" + task_id + "/Comments").AsJson<JArray>();
+			return this.Get($"/{version}/Tasks/" + task_id + "/Comments").AsJson<JArray>();
 		}
 		
 		/// <summary>
@@ -1243,7 +1245,7 @@ namespace InsightlySDK{
 		/// The comment to add.
 		/// </param>
 		public JObject AddTaskComment(int task_id, JObject comment){
-			return this.Post("/v2.1/Tasks/" + task_id + "/Comments").WithBody(comment).AsJson<JObject>();
+			return this.Post($"/{version}/Tasks/" + task_id + "/Comments").WithBody(comment).AsJson<JObject>();
 		}
 		
 		/// <summary>
@@ -1256,7 +1258,7 @@ namespace InsightlySDK{
 		/// <c>TEAM_ID</c> of desired team.
 		/// </param>
 		public JArray GetTeamMembers(int team_id){
-			return this.Get("/v2.1/TeamMembers/teamid=" + team_id).AsJson<JArray>();
+			return this.Get($"/{version}/TeamMembers/teamid=" + team_id).AsJson<JArray>();
 		}
 		
 		/// <summary>
@@ -1269,7 +1271,7 @@ namespace InsightlySDK{
 		/// Desired team member's id.
 		/// </param>
 		public JObject GetTeamMember(int id){
-			return this.Get("/v2.1/TeamMembers/" + id).AsJson<JObject>();
+			return this.Get($"/{version}/TeamMembers/" + id).AsJson<JObject>();
 		}
 		
 		/// <summary>
@@ -1282,7 +1284,7 @@ namespace InsightlySDK{
 		/// The team member to add.
 		/// </param>
 		public JObject AddTeamMember(JObject team_member){
-			return this.Post("/v2.1/TeamMembers").WithBody(team_member).AsJson<JObject>();
+			return this.Post($"/{version}/TeamMembers").WithBody(team_member).AsJson<JObject>();
 		}
 		
 		/// <summary>
@@ -1292,7 +1294,7 @@ namespace InsightlySDK{
 		/// Id of team member to be deleted.
 		/// </param>
 		public void DeleteTeamMember(int id){
-			this.Delete("/v2.1/TeamMembers/" + id).AsString();
+			this.Delete($"/{version}/TeamMembers/" + id).AsString();
 		}
 		
 		/// <summary>
@@ -1305,7 +1307,7 @@ namespace InsightlySDK{
 		/// The team member to update.
 		/// </param>
 		public JObject UpdateTeamMember(JObject team_member){
-			return this.Put("/v2.1/TeamMembers").WithBody(team_member).AsJson<JObject>();
+			return this.Put($"/{version}/TeamMembers").WithBody(team_member).AsJson<JObject>();
 		}
 		
 		/// <summary>
@@ -1328,7 +1330,7 @@ namespace InsightlySDK{
 		/// </param>/
 		public JArray GetTeams(int? top=null, int? skip=null,
 		                       string order_by=null, List<string> filters=null){
-			var request = this.Get("/v2.1/Teams");
+			var request = this.Get($"/{version}/Teams");
 			BuildODataQuery(request, top: top, skip: skip, order_by: order_by, filters: filters);
 			return request.AsJson<JArray>();
 		}
@@ -1343,7 +1345,7 @@ namespace InsightlySDK{
 		/// <c>TEAM_ID</c> of desired team.
 		/// </param>
 		public JObject GetTeam(int id){
-			return this.Get("/v2.1/Teams/" + id).AsJson<JObject>();
+			return this.Get($"/{version}/Teams/" + id).AsJson<JObject>();
 		}
 		
 		/// <summary>
@@ -1356,7 +1358,7 @@ namespace InsightlySDK{
 		/// Team.
 		/// </param>
 		public JObject AddTeam(JObject team){
-			var request = this.Request("/v2.1/Teams");
+			var request = this.Request($"/{version}/Teams");
 			
 			if(IsValidId(team["TEAM_ID"])){
 				request.WithMethod(HTTPMethod.PUT);
@@ -1375,7 +1377,7 @@ namespace InsightlySDK{
 		/// <c>TEAM_ID</c> of team to delete.
 		/// </param>
 		public void DeleteTeam(int id){
-			this.Delete("/v2.1/Teams/" + id).AsString();
+			this.Delete($"/{version}/Teams/" + id).AsString();
 		}
 		
 		/// <summary>
@@ -1385,7 +1387,7 @@ namespace InsightlySDK{
 		/// This account's users.
 		/// </returns>
 		public JArray GetUsers(){
-			return this.Get ("/v2.1/Users/").AsJson<JArray>();
+			return this.Get ($"/{version}/Users/").AsJson<JArray>();
 		}
 
 		/// <summary>
@@ -1398,7 +1400,7 @@ namespace InsightlySDK{
 		/// Desired user's numeric id.
 		/// </param>
 		public JObject GetUser(int id){
-			return this.Get("/v2.1/Users/" + id).AsJson<JObject>();
+			return this.Get($"/{version}/Users/" + id).AsJson<JObject>();
 		}
 		
 		public void Test(int? top=null){
