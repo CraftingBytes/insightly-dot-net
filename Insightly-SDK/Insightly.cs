@@ -1,9 +1,11 @@
 using System;
 using System.Collections.Generic;
-
+using System.Threading.Tasks;
+using InsightlySDK.Entities;
 using Newtonsoft.Json.Linq;
 
-namespace InsightlySDK{
+namespace InsightlySDK
+{
 	/// <summary>
 	/// This class comprises the public interface for the .NET Insightly SDK.
 	/// It provides user-friendly access to the the Insightly REST API
@@ -16,18 +18,23 @@ namespace InsightlySDK{
 	/// <exception cref='Exception'>
 	/// Represents errors that occur during application execution.
 	/// </exception>
-	public class Insightly{
+	public class Insightly
+	{
 		static string version = "v2.2";
+
+		private readonly String _apiKey;
+
 		/// <summary>
 		/// Initializes a new instance of the <see cref="InsightlySDK.Insightly"/> class.
 		/// </summary>
-		/// <param name='api_key'>
+		/// <param name='apiKey'>
 		/// The API key for the account to be accessed.
 		/// </param>
-		public Insightly(String api_key){
-			this.api_key = api_key;
+		public Insightly(String apiKey)
+		{
+			_apiKey = apiKey;
 		}
-		
+
 		/// <summary>
 		/// Get comments for an object.
 		/// </summary>
@@ -37,19 +44,21 @@ namespace InsightlySDK{
 		/// <param name='id'>
 		/// ID of object to get comments of
 		/// </param>
-		public JArray GetComments(int id){
+		public async Task<JArray> GetCommentsAsync(int id)
+		{
 
-			return this.Get($"/{version}/Comments/" + id).AsJson<JArray>();
+			return await Get($"/{version}/Comments/" + id).AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Delete a comment.
 		/// </summary>
 		/// <param name='id'>
 		/// ID of object to delete
 		/// </param>
-		public void DeleteComment(int id){
-			this.Delete($"/{version}/Comments/" + id).AsString();
+		public async Task DeleteComment(int id)
+		{
+			await Delete($"/{version}/Comments/" + id).AsStringAsync();
 		}
 
 		/// <summary>
@@ -63,30 +72,35 @@ namespace InsightlySDK{
 		/// <param name='body'>
 		/// Comment body
 		/// </param>
-		/// <param name='owner_user_id'>
+		/// <param name='ownerUserId'>
 		/// Owner's user id
 		/// </param>
-		/// <param name='comment_id'>
+		/// <param name='commentId'>
 		/// Optional comment id (provide this if updating an existing comment)
 		/// </param>
 		/// <exception cref='ArgumentException'>
 		/// Thrown if body is null or zero-length.
 		/// </exception>
-		public JObject UpdateComment(string body, int owner_user_id, int? comment_id=null){
-			if((body == null) || (body.Length < 1)){
+		public async Task<JObject> UpdateCommentAsync(string body, int ownerUserId, int? commentId = null)
+		{
+			if (string.IsNullOrEmpty(body))
+			{
 				throw new ArgumentException("Comment body cannot be empty.");
 			}
-			
-			JObject data = new JObject();
-			data["BODY"] = body;
-			data["OWNER_USER_ID"] = owner_user_id;
-			if(comment_id != null){
-				data["COMMENT_ID"] = comment_id;
+
+			JObject data = new JObject
+			{
+				["BODY"] = body,
+				["OWNER_USER_ID"] = ownerUserId
+			};
+			if (commentId != null)
+			{
+				data["COMMENT_ID"] = commentId;
 			}
-			
-			return this.Put($"/{version}/Comments").WithBody(data).AsJson<JObject>();
+
+			return await Put($"/{version}/Comments").WithBody(data).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Gets a list of contacts matching specified query parameters.
 		/// </summary>
@@ -112,23 +126,27 @@ namespace InsightlySDK{
 		/// <param name='skip'>
 		/// Skip the first N contacts.
 		/// </param>
-		/// <param name='order_by'>
+		/// <param name='orderBy'>
 		/// Name of field(s) by which to order the result set.
 		/// </param>
-		public JArray GetContacts(List<int> ids=null, string email=null, string tag=null,
-		                          List<string> filters=null, int? top=null, int? skip=null, string order_by=null){
-			var request = this.Get($"/{version}/Contacts");
-			BuildODataQuery(request, filters: filters, top: top, skip: skip, order_by: order_by);
-			if(ids != null){
+		public async Task<JArray> GetContactsAsync(List<int> ids = null, string email = null, string tag = null,
+								  List<string> filters = null, int? top = null, int? skip = null, string orderBy = null)
+		{
+			var request = Get($"/{version}/Contacts");
+			BuildODataQuery(request, filters: filters, top: top, skip: skip, orderBy: orderBy);
+			if (ids != null)
+			{
 				request.WithQueryParam("ids", ids);
 			}
-			if(email != null){
+			if (email != null)
+			{
 				request.WithQueryParam("email", email);
 			}
-			if(tag != null){
+			if (tag != null)
+			{
 				request.WithQueryParam("tag", tag);
 			}
-			return request.AsJson<JArray>();
+			return await request.AsJsonAsync<JArray>();
 		}
 
 		/// <summary>
@@ -140,10 +158,11 @@ namespace InsightlySDK{
 		/// <param name='id'>
 		/// CONTACT_ID of desired contact.
 		/// </param>
-		public JObject GetContact(int id){
-			return this.Get($"/{version}/Contacts/" + id).AsJson<JObject>();
+		public async Task<JObject> GetContact(int id)
+		{
+			return await Get($"/{version}/Contacts/" + id).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Add/Update a contact on Insightly.
 		/// </summary>
@@ -156,27 +175,31 @@ namespace InsightlySDK{
 		/// then a new contact will be created.
 		/// Otherwise, the contact with that id will be updated.
 		/// </param>
-		public JObject AddContact(JObject contact){
-			var request = this.Request($"/{version}/Contacts");
-			
-			if((contact["CONTACT_ID"] != null) && (contact["CONTACT_ID"].Value<int>() > 0)){
-				request.WithMethod(HTTPMethod.PUT);
+		public async Task<JObject> AddContactAsync(JObject contact)
+		{
+			var request = Request($"/{version}/Contacts");
+
+			if (contact["CONTACT_ID"] != null && contact["CONTACT_ID"].Value<int>() > 0)
+			{
+				request.WithMethod(HttpMethod.Put);
 			}
-			else{
-				request.WithMethod(HTTPMethod.POST);
+			else
+			{
+				request.WithMethod(HttpMethod.Post);
 			}
-			
-			return request.WithBody(contact).AsJson<JObject>();
+
+			return await request.WithBody(contact).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Deletes a contact, identified by its id.
 		/// </summary>
 		/// <param name='id'>
 		/// CONTACT_ID of the contact to be deleted.
 		/// </param>
-		public void DeleteContact(int id){
-			this.Delete($"/{version}/Contacts/" + id).AsString();
+		public async Task DeleteContactAsync(int id)
+		{
+			await Delete($"/{version}/Contacts/" + id).AsStringAsync();
 		}
 
 		/// <summary>
@@ -185,72 +208,78 @@ namespace InsightlySDK{
 		/// <returns>
 		/// Emails belonging to specified contact.
 		/// </returns>
-		/// <param name='contact_id'>
+		/// <param name='contactId'>
 		/// A contact's CONTACT_ID
 		/// </param>
-		public JArray GetContactEmails(int contact_id){
-			return this.Get($"/{version}/Contacts/" + contact_id + "/Emails")
-				.AsJson<JArray>();
+		public async Task<JArray> GetContactEmailsAsync(int contactId)
+		{
+			return await Get($"/{version}/Contacts/" + contactId + "/Emails")
+				.AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Get notes for a contact.
 		/// </summary>
 		/// <returns>
 		/// Notes belonging to specified contact.
 		/// </returns>
-		/// <param name='contact_id'>
+		/// <param name='contactId'>
 		/// A contact's CONTACT_ID.
 		/// </param>
-		public JArray GetContactNotes(int contact_id){
-			return this.Get($"/{version}/Contacts/" + contact_id + "/Notes")
-				.AsJson<JArray>();
+		public async Task<JArray> GetContactNotesAsync(int contactId)
+		{
+			return await Get($"/{version}/Contacts/" + contactId + "/Notes")
+				.AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Get tasks for a contact.
 		/// </summary>
 		/// <returns>
 		/// Tasks belonging to contact.
 		/// </returns>
-		/// <param name='contact_id'>
+		/// <param name='contactId'>
 		/// A contact's CONTACT_ID.
 		/// </param>
-		public JArray GetContactTasks(int contact_id){
-			return this.Get($"/{version}/Contacts/" + contact_id + "/Tasks")
-				.AsJson<JArray>();
+		public async Task<JArray> GetContactTasksAsync(int contactId)
+		{
+			return await Get($"/{version}/Contacts/" + contactId + "/Tasks")
+				.AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Get a list of countries recognized by Insightly.
 		/// </summary>
 		/// <returns>
 		/// The countries recognized by Insightly.
 		/// </returns>
-		public JArray GetCountries(){
-			return this.Get($"/{version}/Countries").AsJson<JArray>();
+		public async Task<JArray> GetCountriesAsync()
+		{
+			return await Get($"/{version}/Countries").AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Get the currencies recognized by Insightly
 		/// </summary>
 		/// <returns>
 		/// The currencies recognized by Insightly.
 		/// </returns>
-		public JArray GetCurrencies(){
-			return this.Get($"/{version}/Currencies").AsJson<JArray>();
+		public async Task<JArray> GetCurrenciesAsync()
+		{
+			return await Get($"/{version}/Currencies").AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Gets a list of custom fields.
 		/// </summary>
 		/// <returns>
 		/// The custom fields.
 		/// </returns>
-		public JArray GetCustomFields(){
-			return this.Get ($"/{version}/CustomFields").AsJson<JArray>();
+		public async Task<JArray> GetCustomFieldsAsync()
+		{
+			return await Get($"/{version}/CustomFields").AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Gets details for a custom field, identified by its id.
 		/// </summary>
@@ -260,10 +289,11 @@ namespace InsightlySDK{
 		/// <param name='id'>
 		/// Custom field id.
 		/// </param>
-		public JObject GetCustomField(int id){
-			return this.Get ($"/{version}/CustomFields/" + id).AsJson<JObject>();
+		public async Task<JObject> GetCustomFieldAsync(int id)
+		{
+			return await Get($"/{version}/CustomFields/" + id).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Get emails
 		/// </summary>
@@ -276,19 +306,20 @@ namespace InsightlySDK{
 		/// <param name='skip'>
 		/// OData skip parameter.
 		/// </param>
-		/// <param name='order_by'>
+		/// <param name='orderBy'>
 		/// OData orderby parameter.
 		/// </param>
 		/// <param name='filters'>
 		/// OData filters.
 		/// </param>
-		public JArray GetEmails(int? top=null, int? skip=null,
-		                        string order_by=null, List<string> filters=null){
-			var request = this.Get($"/{version}/Emails");
-			BuildODataQuery(request, top: top, skip: skip, order_by: order_by, filters: filters);
-			return request.AsJson<JArray>();
+		public async Task<JArray> GetEmailsAsync(
+			int? top = null, int? skip = null, string orderBy = null, List<string> filters = null)
+		{
+			var request = Get($"/{version}/Emails");
+			BuildODataQuery(request, top: top, skip: skip, orderBy: orderBy, filters: filters);
+			return await request.AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Get specified the email.
 		/// </summary>
@@ -298,56 +329,62 @@ namespace InsightlySDK{
 		/// <param name='id'>
 		/// ID of email to get.
 		/// </param>
-		public JObject GetEmail(int id){
-			return this.Get($"/{version}/Emails/" + id).AsJson<JObject>();
+		public async Task<JObject> GetEmailAsync(int id)
+		{
+			return await Get($"/{version}/Emails/" + id).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Delete an email.
 		/// </summary>
 		/// <param name='id'>
 		/// ID of email to delete.
 		/// </param>
-		public void DeleteEmail(int id){
-			this.Delete($"/{version}/Emails/" + id).AsString();
+		public async Task DeleteEmailAsync(int id)
+		{
+			await Delete($"/{version}/Emails/" + id).AsStringAsync();
 		}
-		
+
 		/// <summary>
 		/// Get comments for an email
 		/// </summary>
 		/// <returns>
 		/// List of email comments
 		/// </returns>
-		/// <param name='email_id'>
+		/// <param name='emailId'>
 		/// Email id.
 		/// </param>
-		public JArray GetEmailComments(int email_id){
-			return this.Get ($"/{version}/Emails/" + email_id + "/Comments").AsJson<JArray>();
+		public async Task<JArray> GetEmailCommentsAsync(int emailId)
+		{
+			return await Get($"/{version}/Emails/" + emailId + "/Comments").AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Add a comment to an existing email.
 		/// </summary>
 		/// <returns>
 		/// The comment, as returned by the server.
 		/// </returns>
-		/// <param name='email_id'>
+		/// <param name='emailId'>
 		/// ID of email to which the comment will be added.
 		/// </param>
 		/// <param name='body'>
 		/// Comment body.
 		/// </param>
-		/// <param name='owner_user_id'>
+		/// <param name='ownerUserId'>
 		/// Owner's user id.
 		/// </param>
-		public JObject AddCommentToEmail(int email_id, string body, int owner_user_id){
-			var data = new JObject();
-			data["BODY"] = body;
-			data["OWNER_USER_ID"] = owner_user_id;
-			return this.Post($"/{version}/Emails/" + email_id + "/Comments")
-				.WithBody(data).AsJson<JObject>();
+		public async Task<JObject> AddCommentToEmailAsync(int emailId, string body, int ownerUserId)
+		{
+			var data = new JObject
+			{
+				["BODY"] = body,
+				["OWNER_USER_ID"] = ownerUserId
+			};
+			return await Post($"/{version}/Emails/" + emailId + "/Comments")
+				.WithBody(data).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Get a calendar of upcoming events.
 		/// </summary>
@@ -360,17 +397,18 @@ namespace InsightlySDK{
 		/// <param name='skip'>
 		/// If provided, skip the first N records.
 		/// </param>
-		/// <param name='order_by'>
+		/// <param name='orderBy'>
 		/// If provided, specified field(s) to order results on.
 		/// </param>
 		/// <param name='filters'>
 		/// If provided, specifies a list of OData filters.
 		/// </param>
-		public JArray GetEvents(int? top=null, int? skip=null,
-		                        string order_by=null, List<string> filters=null){
-			var request = this.Get($"/{version}/Events");
-			BuildODataQuery(request, top: top, skip: skip, order_by: order_by, filters: filters);
-			return request.AsJson<JArray>();
+		public async Task<JArray> GetEventsAsync(
+			int? top = null, int? skip = null, string orderBy = null, List<string> filters = null)
+		{
+			var request = Get($"/{version}/Events");
+			BuildODataQuery(request, top: top, skip: skip, orderBy: orderBy, filters: filters);
+			return await request.AsJsonAsync<JArray>();
 		}
 
 		/// <summary>
@@ -382,40 +420,45 @@ namespace InsightlySDK{
 		/// <param name='id'>
 		/// EVENT_ID of the desired event.
 		/// </param>
-		public JObject GetEvent(int id){
-			return this.Get($"/{version}/Events/" + id).AsJson<JObject>();
+		public async Task<JObject> GetEvent(int id)
+		{
+			return await Get($"/{version}/Events/" + id).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Add/update an event in the calendar.
 		/// </summary>
 		/// <returns>
 		/// The new/updated event, as returned by the server.
 		/// </returns>
-		/// <param name='the_event'>
+		/// <param name='theEvent'>
 		/// The event to add/update.
 		/// </param>
-		public JObject AddEvent(JObject the_event){
+		public async Task<JObject> AddEventAsync(JObject theEvent)
+		{
 			var request = Request($"/{version}/Events");
-			
-			if((the_event["EVENT_ID"] != null) && (the_event["EVENT_ID"].Value<int>() > 0)){
-				request.WithMethod(HTTPMethod.PUT);
+
+			if (theEvent["EVENT_ID"] != null && theEvent["EVENT_ID"].Value<int>() > 0)
+			{
+				request.WithMethod(HttpMethod.Put);
 			}
-			else{
-				request.WithMethod(HTTPMethod.POST);
+			else
+			{
+				request.WithMethod(HttpMethod.Post);
 			}
-			
-			return request.WithBody(the_event).AsJson<JObject>();
+
+			return await request.WithBody(theEvent).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Delete an event.
 		/// </summary>
 		/// <param name='id'>
 		/// ID of the event to be deleted.
 		/// </param>
-		public void DeleteEvent(int id){
-			this.Delete($"/{version}/Events/" + id).AsString();
+		public async Task DeleteEventAsync(int id)
+		{
+			await Delete($"/{version}/Events/" + id).AsStringAsync();
 		}
 
 		/// <summary>
@@ -424,10 +467,11 @@ namespace InsightlySDK{
 		/// <returns>
 		/// The file categories for this account.
 		/// </returns>
-		public JArray GetFileCategories(){
-			return this.Get($"/{version}/FileCategories").AsJson<JArray>();
+		public async Task<JArray> GetFileCategoriesAsync()
+		{
+			return await Get($"/{version}/FileCategories").AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Get a file category.
 		/// </summary>
@@ -437,10 +481,11 @@ namespace InsightlySDK{
 		/// <param name='id'>
 		/// CATEGORY_ID of desired category.
 		/// </param>
-		public JObject GetFileCategory(int id){
-			return this.Get($"/{version}/FileCategories/" + id).AsJson<JObject>();
+		public async Task<JObject> GetFileCategoryAsync(int id)
+		{
+			return await Get($"/{version}/FileCategories/" + id).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Add/update a file category.
 		/// </summary>
@@ -450,29 +495,33 @@ namespace InsightlySDK{
 		/// <param name='category'>
 		/// The category to add/update.
 		/// </param>
-		public JObject AddFileCategory(JObject category){
-			var request = this.Request($"/{version}/FileCategories");
-			
-			if((category["CATEGORY_ID"] != null) && (category["CATEGORY_ID"].Value<int>() > 0)){
-				request.WithMethod(HTTPMethod.PUT);
+		public async Task<JObject> AddFileCategoryAsync(JObject category)
+		{
+			var request = Request($"/{version}/FileCategories");
+
+			if ((category["CATEGORY_ID"] != null) && (category["CATEGORY_ID"].Value<int>() > 0))
+			{
+				request.WithMethod(HttpMethod.Put);
 			}
-			else{
-				request.WithMethod(HTTPMethod.POST);
+			else
+			{
+				request.WithMethod(HttpMethod.Post);
 			}
-			
-			return request.WithBody(category).AsJson<JObject>();
+
+			return await request.WithBody(category).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Delete a file category.
 		/// </summary>
 		/// <param name='id'>
 		/// CATEGORY_ID of the file category to delete.
 		/// </param>
-		public void DeleteFileCategory(int id){
-			this.Delete($"/{version}/FileCategories/" + id).AsString();
+		public async Task DeleteFileCategoryAsync(int id)
+		{
+			await Delete($"/{version}/FileCategories/" + id).AsStringAsync();
 		}
-		
+
 		/// <summary>
 		/// Get a list of notes created by the user.
 		/// </summary>
@@ -485,17 +534,18 @@ namespace InsightlySDK{
 		/// <param name='skip'>
 		/// Skip the first N notes.
 		/// </param>
-		/// <param name='order_by'>
+		/// <param name='orderBy'>
 		/// Order notes by specified field(s)
 		/// </param>
 		/// <param name='filters'>
 		/// List of OData filters to apply to results.
 		/// </param>
-		public JArray GetNotes(int? top=null, int? skip=null,
-		                       string order_by=null, List<string> filters=null){
-			var request = this.Get($"/{version}/Notes");
-			BuildODataQuery(request, top: top, skip: skip, order_by: order_by, filters: filters);
-			return request.AsJson<JArray>();
+		public async Task<JArray> GetNotesAsync(
+			int? top = null, int? skip = null, string orderBy = null, List<string> filters = null)
+		{
+			var request = Get($"/{version}/Notes");
+			BuildODataQuery(request, top: top, skip: skip, orderBy: orderBy, filters: filters);
+			return await request.AsJsonAsync<JArray>();
 		}
 
 		/// <summary>
@@ -507,8 +557,9 @@ namespace InsightlySDK{
 		/// <param name='id'>
 		/// <c>NOTE_ID</c> of desired note.
 		/// </param>
-		public JObject GetNote(int id){
-			return this.Get($"/{version}/Notes/" + id).AsJson<JObject>();
+		public async Task<JObject> GetNoteAsync(int id)
+		{
+			return await Get($"/{version}/Notes/" + id).AsJsonAsync<JObject>();
 		}
 
 		/// <summary>
@@ -520,60 +571,57 @@ namespace InsightlySDK{
 		/// <param name='note'>
 		/// The note object to add or update.
 		/// </param>
-		public JObject AddNote(JObject note){
-			var request = this.Request($"/{version}/Notes");
-			
-			if(IsValidId(note["NOTE_ID"])){
-				request.WithMethod(HTTPMethod.PUT);
-			}
-			else{
-				request.WithMethod(HTTPMethod.POST);
-			}
-			
-			return request.WithBody(note).AsJson<JObject>();
+		public async Task<JObject> AddNoteAsync(JObject note)
+		{
+			var request = Request($"/{version}/Notes");
+			request.WithMethod(IsValidId(note["NOTE_ID"]) ? HttpMethod.Put : HttpMethod.Post);
+			return await request.WithBody(note).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Delete a note.
 		/// </summary>
 		/// <param name='id'>
 		/// NOTE_ID of note to delete.
 		/// </param>
-		public void DeleteNote(int id){
-			this.Delete($"/{version}/Notes/" + id).AsString();
+		public async Task DeleteNoteAsync(int id)
+		{
+			await Delete($"/{version}/Notes/" + id).AsStringAsync();
 		}
-		
+
 		/// <summary>
 		/// Get comments attached to a note.
 		/// </summary>
 		/// <returns>
 		/// The note comments.
 		/// </returns>
-		/// <param name='note_id'>
+		/// <param name='noteId'>
 		/// <c>NOTE_ID</c> of desired note.
 		/// </param>
-		public JObject GetNoteComments(int note_id){
-			return this.Get($"/{version}/Notes/" + note_id + "/Comments")
-				.AsJson<JObject>();
+		public async Task<JObject> GetNoteCommentsAsync(int noteId)
+		{
+			return await Get($"/{version}/Notes/" + noteId + "/Comments")
+				.AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Attach a comment to a note.
 		/// </summary>
 		/// <returns>
 		/// Result from server.
 		/// </returns>
-		/// <param name='note_id'>
+		/// <param name='noteId'>
 		/// <c>NOTE_ID</c> of note to which comment will be attached.
 		/// </param>
 		/// <param name='comment'>
 		/// The comment to attach to the note.
 		/// </param>
-		public JObject AddNoteComment(int note_id, JObject comment){
-			return this.Post($"/{version}/Notes/" + note_id + "/Comments")
-				.WithBody(comment).AsJson<JObject>();
+		public async Task<JObject> AddNoteCommentAsync(int noteId, JObject comment)
+		{
+			return await Post($"/{version}/Notes/" + noteId + "/Comments")
+				.WithBody(comment).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Get opportunities matching specified criteria.
 		/// </summary>
@@ -586,19 +634,20 @@ namespace InsightlySDK{
 		/// <param name='skip'>
 		/// Skip first N opportunities.
 		/// </param>
-		/// <param name='order_by'>
+		/// <param name='orderBy'>
 		/// Order opportunities by specified field(s).
 		/// </param>
 		/// <param name='filters'>
 		/// List of OData filters to apply to query.
 		/// </param>
-		public JArray GetOpportunities(int? top=null, int? skip=null,
-		                               string order_by=null, List<string> filters=null){
-			var request = this.Get($"/{version}/Opportunities");
-			BuildODataQuery(request, top: top, skip: skip, order_by: order_by, filters: filters);
-			return request.AsJson<JArray>();
+		public async Task<JArray> GetOpportunitiesAsync(
+			int? top = null, int? skip = null, string orderBy = null, List<string> filters = null)
+		{
+			var request = Get($"/{version}/Opportunities");
+			BuildODataQuery(request, top: top, skip: skip, orderBy: orderBy, filters: filters);
+			return await request.AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Get an opportunity.
 		/// </summary>
@@ -608,10 +657,11 @@ namespace InsightlySDK{
 		/// <param name='id'>
 		/// OPPORTUNITY_ID of desired opportunity.
 		/// </param>
-		public JObject GetOpportunity(int id){
-			return this.Get($"/{version}/Opportunities/" + id).AsJson<JObject>();
+		public async Task<JObject> GetOpportunityAsync(int id)
+		{
+			return await Get($"/{version}/Opportunities/" + id).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Add/update an opportunity.
 		/// </summary>
@@ -621,41 +671,37 @@ namespace InsightlySDK{
 		/// <param name='opportunity'>
 		/// The opportunity to add/update.
 		/// </param>
-		public JObject AddOpportunity(JObject opportunity){
-			var request = this.Request($"/{version}/Opportunities");
-			
-			if(IsValidId(opportunity["OPPORTUNITY_ID"])){
-				request.WithMethod(HTTPMethod.PUT);
-			}
-			else{
-				request.WithMethod(HTTPMethod.POST);
-			}
-			
-			return request.WithBody(opportunity).AsJson<JObject>();
+		public async Task<JObject> AddOpportunityAsync(JObject opportunity)
+		{
+			var request = Request($"/{version}/Opportunities");
+			request.WithMethod(IsValidId(opportunity["OPPORTUNITY_ID"]) ? HttpMethod.Put : HttpMethod.Post);
+			return await request.WithBody(opportunity).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Delete an opportunity.
 		/// </summary>
 		/// <param name='id'>
 		/// OPPORTUNITY_ID of opportunity to delete.
 		/// </param>
-		public void DeleteOpportunity(int id){
-			this.Delete($"/{version}/Opportunities/" + id).AsString();
+		public async Task DeleteOpportunityAsync(int id)
+		{
+			await Delete($"/{version}/Opportunities/" + id).AsStringAsync();
 		}
-		
+
 		/// <summary>
 		/// Get history of states and reasons for an opportunity.
 		/// </summary>
 		/// <returns>
 		/// History of states and reasons associated with specified opportunity.
 		/// </returns>
-		/// <param name='opportunity_id'>
+		/// <param name='opportunityId'>
 		/// OPPORTUNITY_ID of opportunity to get history of.
 		/// </param>
-		public JArray GetOpportunityStateHistory(int opportunity_id){
-			return this.Get($"/{version}/Opportunities/" + opportunity_id + "/StateHistory")
-				.AsJson<JArray>();
+		public async Task<JArray> GetOpportunityStateHistoryAsync(int opportunityId)
+		{
+			return await Get($"/{version}/Opportunities/" + opportunityId + "/StateHistory")
+				.AsJsonAsync<JArray>();
 		}
 
 		/// <summary>
@@ -664,53 +710,57 @@ namespace InsightlySDK{
 		/// <returns>
 		/// The emails associated with specified opportunity.
 		/// </returns>
-		/// <param name='opportunity_id'>
+		/// <param name='opportunityId'>
 		/// OPPORTUNITY_ID of desired opportunity.
 		/// </param>
-		public JArray GetOpportunityEmails(int opportunity_id){
-			return this.Get($"/{version}/Opportunities/" + opportunity_id + "/Emails")
-				.AsJson<JArray>();
+		public async Task<JArray> GetOpportunityEmailsAsync(int opportunityId)
+		{
+			return await Get($"/{version}/Opportunities/" + opportunityId + "/Emails")
+				.AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Get notes linked to an opportunity
 		/// </summary>
 		/// <returns>
 		/// The notes associated with specified opportunity.
 		/// </returns>
-		/// <param name='opportunity_id'>
+		/// <param name='opportunityId'>
 		/// OPPORTUNITY_ID of desired opportunity.
 		/// </param>
-		public JArray GetOpportunityNotes(int opportunity_id){
-			return this.Get($"/{version}/Opportunities/" + opportunity_id + "/Notes")
-				.AsJson<JArray>();
+		public async Task<JArray> GetOpportunityNotesAsync(int opportunityId)
+		{
+			return await Get($"/{version}/Opportunities/" + opportunityId + "/Notes")
+				.AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Get tasks linked to an opportunity.
 		/// </summary>
 		/// <returns>
 		/// The tasks associated with specified opportunity.
 		/// </returns>
-		/// <param name='opportunity_id'>
+		/// <param name='opportunityId'>
 		/// OPPORTUNITY_ID of desired opportunity.
 		/// </param>
-		public JArray GetOpportunityTasks(int opportunity_id){
-			return this.Get($"/{version}/Opportunities/" + opportunity_id + "/Tasks")
-				.AsJson<JArray>();
+		public async Task<JArray> GetOpportunityTasksAsync(int opportunityId)
+		{
+			return await Get($"/{version}/Opportunities/" + opportunityId + "/Tasks")
+				.AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Get a list of opportunity categories.
 		/// </summary>
 		/// <returns>
 		/// The opportunity categories.
 		/// </returns>
-		public JArray GetOpportunityCategories(){
-			return this.Get($"/{version}/OpportunityCategories")
-				.AsJson<JArray>();
+		public async Task<JArray> GetOpportunityCategoriesAsync()
+		{
+			return await Get($"/{version}/OpportunityCategories")
+				.AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Get an opportunity categoriy.
 		/// </summary>
@@ -720,11 +770,12 @@ namespace InsightlySDK{
 		/// <param name='id'>
 		/// CATEGORY_ID of desired opportunity category.
 		/// </param>
-		public JObject GetOpportunityCategoriy(int id){
-			return this.Get($"/{version}/OpportunityCategories/" + id)
-				.AsJson<JObject>();
+		public async Task<JObject> GetOpportunityCategoryAsync(int id)
+		{
+			return await Get($"/{version}/OpportunityCategories/" + id)
+				.AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Add/update an opportunity category.
 		/// </summary>
@@ -734,40 +785,36 @@ namespace InsightlySDK{
 		/// <param name='category'>
 		/// The category to add/update.
 		/// </param>
-		public JObject AddOpportunityCategory(JObject category){
-			var request = this.Request($"/{version}/OpportunityCategories");
-			
-			if(IsValidId(category["CATEGORY_ID"])){
-				request.WithMethod(HTTPMethod.PUT);
-			}
-			else{
-				request.WithMethod(HTTPMethod.POST);
-			}
-			
-			return request.WithBody(category).AsJson<JObject>();
+		public async Task<JObject> AddOpportunityCategoryAsync(JObject category)
+		{
+			var request = Request($"/{version}/OpportunityCategories");
+			request.WithMethod(IsValidId(category["CATEGORY_ID"]) ? HttpMethod.Put : HttpMethod.Post);
+			return await request.WithBody(category).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Delete an opportunity category.
 		/// </summary>
 		/// <param name='id'>
 		/// CATEGORY_ID of opportunity category to delete.
 		/// </param>
-		public void DeleteOpportunityCategory(int id){
-			this.Delete($"/{version}/OpportunityCategories/" + id).AsString();
+		public async Task DeleteOpportunityCategoryAsync(int id)
+		{
+			await Delete($"/{version}/OpportunityCategories/" + id).AsStringAsync();
 		}
-		
+
 		/// <summary>
 		/// Get a list of opportunity state reasons.
 		/// </summary>
 		/// <returns>
 		/// The opportunity state reasons.
 		/// </returns>
-		public JArray GetOpportunityStateReasons(){
-			return this.Get($"/{version}/OpportunityStateReasons")
-				.AsJson<JArray>();
+		public async Task<JArray> GetOpportunityStateReasonsAsync()
+		{
+			return await Get($"/{version}/OpportunityStateReasons")
+				.AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Get organizations matching specified criteria.
 		/// </summary>
@@ -789,30 +836,34 @@ namespace InsightlySDK{
 		/// <param name='skip'>
 		/// Skip first N organizations.
 		/// </param>
-		/// <param name='order_by'>
+		/// <param name='orderBy'>
 		/// Order results by specified field(s).
 		/// </param>
 		/// <param name='filters'>
 		/// List of OData filters statements to apply.
 		/// </param>
-		public JArray GetOrganizations(List<int> ids=null, string domain=null, string tag=null,
-		                               int? top=null, int? skip=null, string order_by=null, List<string> filters=null){
-			var request = this.Get($"/{version}/Organisations");
-			BuildODataQuery(request, top: top, skip: skip, order_by: order_by, filters: filters);
-			
-			if(domain != null){
+		public async Task<List<Organisation>> GetOrganizationsAsync(
+			List<int> ids = null, string domain = null, string tag = null, int? top = null, int? skip = null, string orderBy = null, List<string> filters = null)
+		{
+			var request = Get($"/{version}/Organisations");
+			BuildODataQuery(request, top: top, skip: skip, orderBy: orderBy, filters: filters);
+
+			if (domain != null)
+			{
 				request.WithQueryParam("domain", domain);
 			}
-			if(tag != null){
+			if (tag != null)
+			{
 				request.WithQueryParam("tag", tag);
 			}
-			if(ids != null){
+			if (ids != null)
+			{
 				request.WithQueryParam("ids", String.Join(",", ids));
 			}
-			
-			return request.AsJson<JArray>();
+
+			return await request.AsJsonAsync<List<Organisation>>();
 		}
-		
+
 		/// <summary>
 		/// Get an organization.
 		/// </summary>
@@ -822,8 +873,9 @@ namespace InsightlySDK{
 		/// <param name='id'>
 		/// <c>ORGANISATION_ID</c> of desired organization.
 		/// </param>
-		public JObject GetOrganization(int id){
-			return this.Get($"/{version}/Organisations/" + id).AsJson<JObject>();
+		public async Task<Organisation> GetOrganizationAsync(int id)
+		{
+			return await Get($"/{version}/Organisations/" + id).AsJsonAsync<Organisation>();
 		}
 
 		/// <summary>
@@ -835,27 +887,22 @@ namespace InsightlySDK{
 		/// <param name='organization'>
 		/// Organization to add/update.
 		/// </param>
-		public JObject AddOrganization(JObject organization){
-			var request = this.Request($"/{version}/Organisations");
-			
-			if(IsValidId(organization["ORGANISATION_ID"])){
-				request.WithMethod(HTTPMethod.PUT);
-			}
-			else{
-				request.WithMethod(HTTPMethod.POST);
-			}
-			
-			return request.WithBody(organization).AsJson<JObject>();
+		public async Task<JObject> AddOrganizationAsync(JObject organization)
+		{
+			var request = Request($"/{version}/Organisations");
+			request.WithMethod(IsValidId(organization["ORGANISATION_ID"]) ? HttpMethod.Put : HttpMethod.Post);
+			return await request.WithBody(organization).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Delete an organization.
 		/// </summary>
 		/// <param name='id'>
 		/// <c>ORGANISATION_ID</c> of organization to delete.
 		/// </param>
-		public void DeleteOrganization(int id){
-			this.Delete($"/{version}/Organisations/" + id).AsString();
+		public async Task DeleteOrganizationAsync(int id)
+		{
+			await Delete($"/{version}/Organisations/" + id).AsStringAsync();
 		}
 
 		/// <summary>
@@ -864,12 +911,13 @@ namespace InsightlySDK{
 		/// <returns>
 		/// The organization's emails.
 		/// </returns>
-		/// <param name='organization_id'>
+		/// <param name='organizationId'>
 		/// <c>ORGANISATION_ID</c> of desired organization.
 		/// </param>
-		public JArray GetOrganizationEmails(int organization_id){
-			return this.Get($"/{version}/Organisations/" + organization_id + "/Emails")
-				.AsJson<JArray>();
+		public async Task<JArray> GetOrganizationEmailsAsync(long organizationId)
+		{
+			return await Get($"/{version}/Organisations/" + organizationId + "/Emails")
+				.AsJsonAsync<JArray>();
 		}
 
 		/// <summary>
@@ -878,12 +926,13 @@ namespace InsightlySDK{
 		/// <returns>
 		/// The organization's notes.
 		/// </returns>
-		/// <param name='organization_id'>
+		/// <param name='organizationId'>
 		/// <c>ORGANISATION_ID</c> of desired organization.
 		/// </param>
-		public JArray GetOrganizationNotes(int organization_id){
-			return this.Get($"/{version}/Organisations/" + organization_id + "/Notes")
-				.AsJson<JArray>();
+		public async Task<JArray> GetOrganizationNotesAsync(long organizationId)
+		{
+			return await Get($"/{version}/Organisations/" + organizationId + "/Notes")
+				.AsJsonAsync<JArray>();
 		}
 
 		/// <summary>
@@ -892,24 +941,26 @@ namespace InsightlySDK{
 		/// <returns>
 		/// The organization's tasks.
 		/// </returns>
-		/// <param name='organization_id'>
+		/// <param name='organizationId'>
 		/// <c>ORGANISATION_ID</c> of desired organization.
 		/// </param>
-		public JArray GetOrganizationTasks(int organization_id){
-			return this.Get($"/{version}/Organisations/" + organization_id + "/Tasks")
-				.AsJson<JArray>();
+		public async Task<JArray> GetOrganizationTasksAsync(long organizationId)
+		{
+			return await Get($"/{version}/Organisations/" + organizationId + "/Tasks")
+				.AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Get a list of pipelines.
 		/// </summary>
 		/// <returns>
 		/// The pipelines.
 		/// </returns>
-		public JArray GetPipelines(){
-			return this.Get($"/{version}/Pipelines").AsJson<JArray>();
+		public async Task<JArray> GetPipelinesAsync()
+		{
+			return await Get($"/{version}/Pipelines").AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Get a pipeline.
 		/// </summary>
@@ -919,20 +970,22 @@ namespace InsightlySDK{
 		/// <param name='id'>
 		/// Pipeline id.
 		/// </param>
-		public JObject GetPipeline(int id){
-			return this.Get($"/{version}/Pipelines/" + id).AsJson<JObject>();
+		public async Task<JObject> GetPipelineAsync(int id)
+		{
+			return await Get($"/{version}/Pipelines/" + id).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Get the pipeline stages.
 		/// </summary>
 		/// <returns>
 		/// The pipeline stages.
 		/// </returns>
-		public JArray GetPipelineStages(){
-			return this.Get($"/{version}/PipelineStages").AsJson<JArray>();
+		public async Task<JArray> GetPipelineStagesAsync()
+		{
+			return await Get($"/{version}/PipelineStages").AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Get a pipeline stage.
 		/// </summary>
@@ -942,20 +995,22 @@ namespace InsightlySDK{
 		/// <param name='id'>
 		/// Pipeline stage's id.
 		/// </param>
-		public JObject GetPipelineStage(int id){
-			return this.Get("v2.1/PipelineStages/" + id).AsJson<JObject>();
+		public async Task<JObject> GetPipelineStageAsync(int id)
+		{
+			return await Get("v2.1/PipelineStages/" + id).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Get list project categories.
 		/// </summary>
 		/// <returns>
 		/// The project categories.
 		/// </returns>
-		public JArray GetProjectCategories(){
-			return this.Get($"/{version}/ProjectCategories").AsJson<JArray>();
+		public async Task<JArray> GetProjectCategoriesAsync()
+		{
+			return await Get($"/{version}/ProjectCategories").AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Get a project category.
 		/// </summary>
@@ -965,8 +1020,9 @@ namespace InsightlySDK{
 		/// <param name='id'>
 		/// <c>CATEGORY_ID</c> of desired category.
 		/// </param>
-		public JObject GetProjectCategory(int id){
-			return this.Get($"/{version}/ProjectCategories/" + id).AsJson<JObject>();
+		public async Task<JObject> GetProjectCategoryAsync(int id)
+		{
+			return await Get($"/{version}/ProjectCategories/" + id).AsJsonAsync<JObject>();
 		}
 
 		/// <summary>
@@ -978,29 +1034,24 @@ namespace InsightlySDK{
 		/// <param name='category'>
 		/// The category to add/update.
 		/// </param>
-		public JObject AddProjectCategory(JObject category){
-			var request = this.Request($"/{version}/ProjectCategories");
-			
-			if(IsValidId(category["CATEGORY_ID"])){
-				request.WithMethod(HTTPMethod.PUT);
-			}
-			else{
-				request.WithMethod(HTTPMethod.POST);
-			}
-			
-			return request.WithBody(category).AsJson<JObject>();
+		public async Task<JObject> AddProjectCategoryAsync(JObject category)
+		{
+			var request = Request($"/{version}/ProjectCategories");
+			request.WithMethod(IsValidId(category["CATEGORY_ID"]) ? HttpMethod.Put : HttpMethod.Post);
+			return await request.WithBody(category).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Delete a project category.
 		/// </summary>
 		/// <param name='id'>
 		/// <c>CATEGORY_ID</c> of category to be deleted.
 		/// </param>
-		public void DeleteProjectCategory(int id){
-			this.Delete($"/{version}/ProjectCategories/" + id).AsString();
+		public async Task DeleteProjectCategoryAsync(int id)
+		{
+			await Delete($"/{version}/ProjectCategories/" + id).AsStringAsync();
 		}
-		
+
 		/// <summary>
 		/// Get projects matching specified criteria.
 		/// </summary>
@@ -1013,32 +1064,34 @@ namespace InsightlySDK{
 		/// <param name='skip'>
 		/// Skip the first N projects.
 		/// </param>
-		/// <param name='order_by'>
+		/// <param name='orderBy'>
 		/// Order results by specified field(s).
 		/// </param>
 		/// <param name='filters'>
 		/// List of OData filter statements to apply.
 		/// </param>
-		public JArray GetProjects(int? top=null, int? skip=null,
-		                          string order_by = null, List<string> filters=null){
-			var request = this.Get($"/{version}/Projects");
-			BuildODataQuery(request, top: top, skip: skip, order_by: order_by, filters: filters);
-			return request.AsJson<JArray>();
+		public async Task<List<Project>> GetProjectsAsync(
+			int? top = null, int? skip = null, string orderBy = null, List<string> filters = null)
+		{
+			var request = Get($"/{version}/Projects");
+			BuildODataQuery(request, top: top, skip: skip, orderBy: orderBy, filters: filters);
+			return await request.AsJsonAsync<List<Project>>();
 		}
-		
+
 		/// <summary>
 		/// Get a project.
 		/// </summary>
 		/// <returns>
 		/// The project.
 		/// </returns>
-		/// <param name='id'>
+		/// <param name='projectId'>
 		/// <c>PROJECT_ID</c> of desired project.
 		/// </param>
-		public JObject GetProject(int id){
-			return this.Get($"/{version}/Projects/" + id).AsJson<JObject>();
+		public async Task<Project> GetProjectAsync(long projectId)
+		{
+			return await Get($"/{version}/Projects/" + projectId).AsJsonAsync<Project>();
 		}
-		
+
 		/// <summary>
 		/// Add/update a project.
 		/// </summary>
@@ -1048,55 +1101,52 @@ namespace InsightlySDK{
 		/// <param name='project'>
 		/// Project to add/update.
 		/// </param>
-		public JObject AddProject(JObject project){
-			var request = this.Request($"/{version}/Projects");
-			
-			if(IsValidId(project["PROJECT_ID"])){
-				request.WithMethod(HTTPMethod.PUT);
-			}
-			else{
-				request.WithMethod(HTTPMethod.POST);
-			}
-			
-			return request.WithBody(project).AsJson<JObject>();
+		public async Task<JObject> AddProjectAsync(JObject project)
+		{
+			var request = Request($"/{version}/Projects");
+			request.WithMethod(IsValidId(project["PROJECT_ID"]) ? HttpMethod.Put : HttpMethod.Post);
+			return await request.WithBody(project).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Delete a project.
 		/// </summary>
 		/// <param name='id'>
 		/// <c>PROJECT_ID</c> of project to be deleted.
 		/// </param>
-		public void DeleteProject(int id){
-			this.Delete($"/{version}/Projects/" + id).AsString();
+		public async Task DeleteProjectAsync(int id)
+		{
+			await Delete($"/{version}/Projects/" + id).AsStringAsync();
 		}
-		
+
 		/// <summary>
 		/// Get the emails attached to a project.
 		/// </summary>
 		/// <returns>
 		/// The project's emails.
 		/// </returns>
-		/// <param name='project_id'>
+		/// <param name='projectId'>
 		/// <c>PROJECT_ID</c> of desired project.
 		/// </param>
-		public JArray GetProjectEmails(int project_id){
-			return this.Get($"/{version}/Projects/" + project_id + "/Emails")
-				.AsJson<JArray>();
+		public async Task<JArray> GetProjectEmailsAsync(long projectId)
+		{
+			return await Get($"/{version}/Projects/" + projectId + "/Emails")
+				.AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Get the notes attached to a project.
 		/// </summary>
 		/// <returns>
 		/// The project's notes.
 		/// </returns>
-		/// <param name='project_id'>
+		/// <param name='projectId'>
 		/// <c>PROJECT_ID</c> of desired project.
 		/// </param>
-		public JArray GetProjectNotes(int project_id){
-			return this.Get($"/{version}/Projects/" + project_id + "/Notes")
-				.AsJson<JArray>();
+		public async Task<JArray> GetProjectNotesAsync(long projectId)
+		{
+			return await Get($"/{version}/Projects/" + projectId + "/Notes")
+				.AsJsonAsync<JArray>();
 		}
 
 		/// <summary>
@@ -1105,37 +1155,40 @@ namespace InsightlySDK{
 		/// <returns>
 		/// The project's tasks.
 		/// </returns>
-		/// <param name='project_id'>
+		/// <param name='projectId'>
 		/// <c>PROJECT_ID</c> of desired project.
 		/// </param>
-		public JArray GetProjectTasks(int project_id){
-			return this.Get($"/{version}/Projects/" + project_id + "/Tasks")
-				.AsJson<JArray>();
+		public async Task<JArray> GetProjectTasksAsync(long projectId)
+		{
+			return await Get($"/{version}/Projects/" + projectId + "/Tasks")
+				.AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Get a list of relationships.
 		/// </summary>
 		/// <returns>
 		/// The relationships.
 		/// </returns>
-		public JArray GetRelationships(){
-			return this.Get($"/{version}/Relationships").AsJson<JArray>();
+		public async Task<JArray> GetRelationshipsAsync()
+		{
+			return await Get($"/{version}/Relationships").AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Get tags associated with a parent object.
 		/// </summary>
 		/// <returns>
 		/// List of tags.
 		/// </returns>
-		/// <param name='parent_id'>
+		/// <param name='parentId'>
 		/// The id of the parent object.
 		/// </param>
-		public JArray GetTags(int parent_id){
-			return this.Get($"/{version}/Tags/" + parent_id).AsJson<JArray>();
+		public async Task<JArray> GetTagsAsync(int parentId)
+		{
+			return await Get($"/{version}/Tags/" + parentId).AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Get tasks matching specified criteria.
 		/// </summary>
@@ -1151,24 +1204,26 @@ namespace InsightlySDK{
 		/// <param name='skip'>
 		/// Skip first N tasks.
 		/// </param>
-		/// <param name='order_by'>
+		/// <param name='orderBy'>
 		/// Orders results by specified field(s)
 		/// </param>
 		/// <param name='filters'>
 		/// List of OData filter statements to apply.
 		/// </param>
-		public JArray GetTasks(List<int> ids=null, int? top=null, int? skip=null,
-		                       string order_by=null, List<string> filters=null){
-			var request = this.Get($"/{version}/Tasks");
-			BuildODataQuery(request, top: top, skip: skip, order_by: order_by, filters: filters);
-			
-			if((ids != null) && (ids.Count > 0)){
+		public async Task<JArray> GetTasksAsync(
+			List<int> ids = null, int? top = null, int? skip = null, string orderBy = null, List<string> filters = null)
+		{
+			var request = Get($"/{version}/Tasks");
+			BuildODataQuery(request, top: top, skip: skip, orderBy: orderBy, filters: filters);
+
+			if ((ids != null) && (ids.Count > 0))
+			{
 				request.WithQueryParam("ids", String.Join(",", ids));
 			}
-			
-			return request.AsJson<JArray>();
+
+			return await request.AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Get a task.
 		/// </summary>
@@ -1178,10 +1233,11 @@ namespace InsightlySDK{
 		/// <param name='id'>
 		/// <c>TASK_ID</c> of desired task.
 		/// </param>
-		public JObject GetTask(int id){
-			return this.Get($"/{version}/Tasks/" + id).AsJson<JObject>();
+		public async Task<JObject> GetTaskAsync(int id)
+		{
+			return await Get($"/{version}/Tasks/" + id).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Add/update a task.
 		/// </summary>
@@ -1191,43 +1247,39 @@ namespace InsightlySDK{
 		/// <param name='task'>
 		/// The task to create/update.
 		/// </param>
-		public JObject AddTask(JObject task){
-			var request = this.Request($"/{version}/Tasks");
-			
-			if(IsValidId(task["TASK_ID"])){
-				request.WithMethod(HTTPMethod.PUT);
-			}
-			else{
-				request.WithMethod(HTTPMethod.POST);
-			}
-			
-			return request.WithBody(task).AsJson<JObject>();
+		public async Task<JObject> AddTaskAsync(JObject task)
+		{
+			var request = Request($"/{version}/Tasks");
+			request.WithMethod(IsValidId(task["TASK_ID"]) ? HttpMethod.Put : HttpMethod.Post);
+			return await request.WithBody(task).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Delete a task.
 		/// </summary>
 		/// <param name='id'>
 		/// <c>TASK_ID</c> of task to delete.
 		/// </param>
-		public void DeleteTask(int id){
-			this.Delete($"/{version}/Tasks/" + id).ToString();
+		public async Task DeleteTaskAsync(int id)
+		{
+			await Delete($"/{version}/Tasks/" + id).AsStringAsync();
 		}
-		
-		
+
+
 		/// <summary>
 		/// Get comments attached to a task.
 		/// </summary>
 		/// <returns>
 		/// The task's comments.
 		/// </returns>
-		/// <param name='task_id'>
+		/// <param name='taskId'>
 		/// <c>TASK_ID</c> of desired task.
 		/// </param>
-		public JArray GetTaskComments(int task_id){
-			return this.Get($"/{version}/Tasks/" + task_id + "/Comments").AsJson<JArray>();
+		public async Task<JArray> GetTaskCommentsAsync(int taskId)
+		{
+			return await Get($"/{version}/Tasks/" + taskId + "/Comments").AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Add a comment to a task.
 		/// 
@@ -1238,29 +1290,31 @@ namespace InsightlySDK{
 		/// <returns>
 		/// The new comment, as returned by the server.
 		/// </returns>
-		/// <param name='task_id'>
+		/// <param name='taskId'>
 		/// <c>TASK_ID</c> of task to which the comment will be added.
 		/// </param>
 		/// <param name='comment'>
 		/// The comment to add.
 		/// </param>
-		public JObject AddTaskComment(int task_id, JObject comment){
-			return this.Post($"/{version}/Tasks/" + task_id + "/Comments").WithBody(comment).AsJson<JObject>();
+		public async Task<JObject> AddTaskCommentAsync(int taskId, JObject comment)
+		{
+			return await Post($"/{version}/Tasks/" + taskId + "/Comments").WithBody(comment).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Get members of a team.
 		/// </summary>
 		/// <returns>
 		/// The team's members.
 		/// </returns>
-		/// <param name='team_id'>
+		/// <param name='teamId'>
 		/// <c>TEAM_ID</c> of desired team.
 		/// </param>
-		public JArray GetTeamMembers(int team_id){
-			return this.Get($"/{version}/TeamMembers/teamid=" + team_id).AsJson<JArray>();
+		public async Task<JArray> GetTeamMembersAsync(int teamId)
+		{
+			return await Get($"/{version}/TeamMembers/teamid=" + teamId).AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Get a team member's details.
 		/// </summary>
@@ -1270,46 +1324,50 @@ namespace InsightlySDK{
 		/// <param name='id'>
 		/// Desired team member's id.
 		/// </param>
-		public JObject GetTeamMember(int id){
-			return this.Get($"/{version}/TeamMembers/" + id).AsJson<JObject>();
+		public async Task<JObject> GetTeamMemberAsync(int id)
+		{
+			return await Get($"/{version}/TeamMembers/" + id).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Add a team member.
 		/// </summary>
 		/// <returns>
 		/// The new team member, as returned by the server.
 		/// </returns>
-		/// <param name='team_member'>
+		/// <param name='teamMember'>
 		/// The team member to add.
 		/// </param>
-		public JObject AddTeamMember(JObject team_member){
-			return this.Post($"/{version}/TeamMembers").WithBody(team_member).AsJson<JObject>();
+		public async Task<JObject> AddTeamMemberAsync(JObject teamMember)
+		{
+			return await Post($"/{version}/TeamMembers").WithBody(teamMember).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Delete a team member.
 		/// </summary>
 		/// <param name='id'>
 		/// Id of team member to be deleted.
 		/// </param>
-		public void DeleteTeamMember(int id){
-			this.Delete($"/{version}/TeamMembers/" + id).AsString();
+		public async Task DeleteTeamMemberAsync(int id)
+		{
+			await Delete($"/{version}/TeamMembers/" + id).AsStringAsync();
 		}
-		
+
 		/// <summary>
 		/// Update a team member.
 		/// </summary>
 		/// <returns>
 		/// The updated team member, as returned by the server.
 		/// </returns>
-		/// <param name='team_member'>
+		/// <param name='teamMember'>
 		/// The team member to update.
 		/// </param>
-		public JObject UpdateTeamMember(JObject team_member){
-			return this.Put($"/{version}/TeamMembers").WithBody(team_member).AsJson<JObject>();
+		public async Task<JObject> UpdateTeamMemberAsync(JObject teamMember)
+		{
+			return await Put($"/{version}/TeamMembers").WithBody(teamMember).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Get teams matching specified criteria.
 		/// </summary>
@@ -1322,19 +1380,20 @@ namespace InsightlySDK{
 		/// <param name='skip'>
 		/// Skip first N teams.
 		/// </param>
-		/// <param name='order_by'>
+		/// <param name='orderBy'>
 		/// Order teams by specified field(s).
 		/// </param>
 		/// <param name='filters'>
 		/// List of OData filter statements to apply.
 		/// </param>/
-		public JArray GetTeams(int? top=null, int? skip=null,
-		                       string order_by=null, List<string> filters=null){
-			var request = this.Get($"/{version}/Teams");
-			BuildODataQuery(request, top: top, skip: skip, order_by: order_by, filters: filters);
-			return request.AsJson<JArray>();
+		public async Task<JArray> GetTeamsAsync(
+			int? top = null, int? skip = null, string orderBy = null, List<string> filters = null)
+		{
+			var request = Get($"/{version}/Teams");
+			BuildODataQuery(request, top: top, skip: skip, orderBy: orderBy, filters: filters);
+			return await request.AsJsonAsync<JArray>();
 		}
-		
+
 		/// <summary>
 		/// Get a team.
 		/// </summary>
@@ -1344,10 +1403,11 @@ namespace InsightlySDK{
 		/// <param name='id'>
 		/// <c>TEAM_ID</c> of desired team.
 		/// </param>
-		public JObject GetTeam(int id){
-			return this.Get($"/{version}/Teams/" + id).AsJson<JObject>();
+		public async Task<JObject> GetTeamAsync(int id)
+		{
+			return await Get($"/{version}/Teams/" + id).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Add/update a team.
 		/// </summary>
@@ -1357,37 +1417,33 @@ namespace InsightlySDK{
 		/// <param name='team'>
 		/// Team.
 		/// </param>
-		public JObject AddTeam(JObject team){
-			var request = this.Request($"/{version}/Teams");
-			
-			if(IsValidId(team["TEAM_ID"])){
-				request.WithMethod(HTTPMethod.PUT);
-			}
-			else{
-				request.WithMethod(HTTPMethod.POST);
-			}
-			
-			return request.WithBody(team).AsJson<JObject>();
+		public async Task<JObject> AddTeamAsync(JObject team)
+		{
+			var request = Request($"/{version}/Teams");
+			request.WithMethod(IsValidId(team["TEAM_ID"]) ? HttpMethod.Put : HttpMethod.Post);
+			return await request.WithBody(team).AsJsonAsync<JObject>();
 		}
-		
+
 		/// <summary>
 		/// Delete a team.
 		/// </summary>
 		/// <param name='id'>
 		/// <c>TEAM_ID</c> of team to delete.
 		/// </param>
-		public void DeleteTeam(int id){
-			this.Delete($"/{version}/Teams/" + id).AsString();
+		public async Task DeleteTeamAsync(int id)
+		{
+			await Delete($"/{version}/Teams/" + id).AsStringAsync();
 		}
-		
+
 		/// <summary>
 		/// Get a list of users for this account.
 		/// </summary>
 		/// <returns>
 		/// This account's users.
 		/// </returns>
-		public JArray GetUsers(){
-			return this.Get ($"/{version}/Users/").AsJson<JArray>();
+		public async Task<JArray> GetUsersAsync()
+		{
+			return await Get($"/{version}/Users/").AsJsonAsync<JArray>();
 		}
 
 		/// <summary>
@@ -1399,623 +1455,690 @@ namespace InsightlySDK{
 		/// <param name='id'>
 		/// Desired user's numeric id.
 		/// </param>
-		public JObject GetUser(int id){
-			return this.Get($"/{version}/Users/" + id).AsJson<JObject>();
+		public async Task<JObject> GetUserAsync(int id)
+		{
+			return await Get($"/{version}/Users/" + id).AsJsonAsync<JObject>();
 		}
-		
-		public void Test(int? top=null){
+
+		public async Task Test(int? top = null)
+		{
 			Console.WriteLine("Testing API .....");
-			
+
 			Console.WriteLine("Testing authentication");
-			
-			int passed = 0;
+
 			int failed = 0;
-			
-			var currencies = this.GetCurrencies();
-			if(currencies.Count > 0){
+
+			var currencies = await GetCurrenciesAsync();
+			if (currencies.Count > 0)
+			{
 				Console.WriteLine("Authentication passed...");
-				passed += 1;
 			}
-			else{
+			else
+			{
 				failed += 1;
 			}
-			
-			int user_id = 0;
-			try{
-				var users = this.GetUsers();
+
+			int userId = 0;
+			try
+			{
+				var users = await GetUsersAsync();
 				JObject user = users[0].Value<JObject>();
-				user_id = user["USER_ID"].Value<int>();
+				userId = user["USER_ID"].Value<int>();
 				Console.WriteLine("PASS: GetUsers, found " + users.Count + " users.");
-				passed += 1;
 			}
-			catch(Exception){
+			catch (Exception)
+			{
 				Console.WriteLine("FAIL: GetUsers()");
 				failed += 1;
 			}
-			
+
 			// Test GetContacts()
-			try{
-				var contacts = this.GetContacts(order_by: "DATE_UPDATED_UTC desc", top: top);
+			try
+			{
+				var contacts = await GetContactsAsync(orderBy: "DATE_UPDATED_UTC desc", top: top);
 				Console.WriteLine("PASS: GetContacts(), found " + contacts.Count + " contacts.");
-				passed += 1;
-				
-				if(contacts.Count > 0){
+
+				if (contacts.Count > 0)
+				{
 					JObject contact = contacts[0].Value<JObject>();
-					int contact_id = contact["CONTACT_ID"].Value<int>();
-					
+					int contactId = contact["CONTACT_ID"].Value<int>();
+
 					// Test GetContactEmails()
-					try{
-						var emails = this.GetContactEmails(contact_id);
+					try
+					{
+						var emails = await GetContactEmailsAsync(contactId);
 						Console.WriteLine("PASS: GetContactEmails(), found " + emails.Count + " emails.");
-						passed += 1;
 					}
-					catch(Exception){
+					catch (Exception)
+					{
 						Console.WriteLine("FAIL: GetContactEmails()");
 						failed += 1;
 					}
-					
+
 					// Test GetContactNotes()
-					try{
-						var notes = this.GetContactNotes(contact_id);
+					try
+					{
+						var notes = await GetContactNotesAsync(contactId);
 						Console.WriteLine("PASS: GetContactNotes(), found " + notes.Count + " notes.");
-						passed += 1;
 					}
-					catch(Exception){
+					catch (Exception)
+					{
 						Console.WriteLine("FAIL: GetContactNotes()");
 						failed += 1;
 					}
 
 					// Test GetContactTasks()
-					try{
-						var tasks = this.GetContactTasks(contact_id);
+					try
+					{
+						var tasks = await GetContactTasksAsync(contactId);
 						Console.WriteLine("PASS: GetContactTasks(), found " + tasks.Count + " tasks.");
-						passed += 1;
 					}
-					catch(Exception){
+					catch (Exception)
+					{
 						Console.WriteLine("FAIL: GetContactTasks()");
 						failed += 1;
 					}
 				}
 			}
-			catch(Exception){
+			catch (Exception)
+			{
 				Console.WriteLine("FAIL: GetContacts()");
 				failed += 1;
 			}
-            
+
 			// Test AddContact()
-			try{
-				var contact = new JObject();
-				contact["SALUTATION"] = "Mr";
-				contact["FIRST_NAME"] = "Testy";
-				contact["LAST_NAME"] = "McTesterson";
+			try
+			{
+				var contact = new JObject
+				{
+					["SALUTATION"] = "Mr",
+					["FIRST_NAME"] = "Testy",
+					["LAST_NAME"] = "McTesterson"
+				};
 
-                var contactInfos = new JArray();
-                var email = new JObject();
-                email["TYPE"] = "EMAIL";
-                email["LABEL"] = "Personal";
-                email["DETAIL"] = "test@example.com";
-                contactInfos.Add(email);
-                contact["CONTACTINFOS"] = contactInfos;
+				var contactInfos = new JArray();
+				var email = new JObject
+				{
+					["TYPE"] = "EMAIL",
+					["LABEL"] = "Personal",
+					["DETAIL"] = "test@example.com"
+				};
+				contactInfos.Add(email);
+				contact["CONTACTINFOS"] = contactInfos;
 
-                contact = this.AddContact(contact);
+				contact = await AddContactAsync(contact);
 				Console.WriteLine("PASS: AddContact()");
-				passed += 1;
 
-                // Test GetContacts() by email
-                try
-                {
-                    var contacts = this.GetContacts(null, "test@example.com");
+				// Test GetContacts() by email
+				try
+				{
+					var contacts = await GetContactsAsync(null, "test@example.com");
 
-                    if(contacts.Count != 1)
-                    {
-                        throw new Exception();
-                    }
+					if (contacts.Count != 1)
+					{
+						throw new Exception();
+					}
 
-                    Console.WriteLine("PASS: GetContacts() by email, found " + contacts.Count + " contacts.");
-                    passed += 1;
-                }
-                catch (Exception){
-                    Console.WriteLine("FAIL: GetContacts() by email");
-                    failed += 1;
-                }
-
-                // Test DeleteContact()
-                try
-                {
-					this.DeleteContact(contact["CONTACT_ID"].Value<int>());
-					Console.WriteLine("PASS: DeleteContact()");
-					passed += 1;
+					Console.WriteLine("PASS: GetContacts() by email, found " + contacts.Count + " contacts.");
 				}
-				catch(Exception){
+				catch (Exception)
+				{
+					Console.WriteLine("FAIL: GetContacts() by email");
+					failed += 1;
+				}
+
+				// Test DeleteContact()
+				try
+				{
+					await DeleteContactAsync(contact["CONTACT_ID"].Value<int>());
+					Console.WriteLine("PASS: DeleteContact()");
+				}
+				catch (Exception)
+				{
 					Console.WriteLine("FAIL: DeleteContact()");
 					failed += 1;
 				}
 			}
-			catch(Exception ex){
+			catch (Exception)
+			{
 				Console.WriteLine("FAIL: AddContact()");
-				failed += 1;
-				throw ex;
+				throw;
 			}
-			
+
 			// Test GetCountries()
-			try{
-				var countries = this.GetCountries();
+			try
+			{
+				var countries = await GetCountriesAsync();
 				Console.WriteLine("PASS: GetCountries(), found " + countries.Count + " countries.");
-				passed += 1;
 			}
-			catch(Exception){
+			catch (Exception)
+			{
 				Console.WriteLine("FAIL: GetCountries()");
 				failed += 1;
 			}
-			
+
 			// Test GetCurrencies()
-			try{
-				currencies = this.GetCurrencies();
+			try
+			{
+				currencies = await GetCurrenciesAsync();
 				Console.WriteLine("PASS: GetCurrencies(), found " + currencies.Count + " currencies.");
-				passed += 1;
 			}
-			catch(Exception){
+			catch (Exception)
+			{
 				Console.WriteLine("FAIL: GetCurrencies()");
 				failed += 1;
 			}
-			
+
 			// Test GetCustomFields()
-			try{
-				var custom_fields = this.GetCustomFields();
-				Console.WriteLine("PASS: GetCustomFields(), found " + custom_fields.Count + " custom fields.");
-				passed += 1;
+			try
+			{
+				var customFields = await GetCustomFieldsAsync();
+				Console.WriteLine("PASS: GetCustomFields(), found " + customFields.Count + " custom fields.");
 			}
-			catch(Exception){
-				Console.WriteLine ("FAIL: GetCustomFields()");
+			catch (Exception)
+			{
+				Console.WriteLine("FAIL: GetCustomFields()");
 				failed += 1;
 			}
-			
+
 			// Test GetEmails()
-			try{
-				var emails = this.GetEmails();
+			try
+			{
+				var emails = await GetEmailsAsync();
 				Console.WriteLine("PASS: GetEmails(), found " + emails.Count + " emails.");
-				passed += 1;
 			}
-			catch{
+			catch
+			{
 				Console.WriteLine("FAIL: GetEmails()");
 				failed += 1;
 			}
-			
+
 			// Test GetEvents()
-			try{
-				var events = this.GetEvents(top: top);
+			try
+			{
+				var events = await GetEventsAsync(top: top);
 				Console.WriteLine("PASS: GetEvents(), found " + events.Count + " events.");
-				passed += 1;
 			}
-			catch(Exception){
+			catch (Exception)
+			{
 				Console.WriteLine("FAIL: GetEvents()");
 				failed += 1;
 			}
-			
+
 			// Test AddEvent()
-			try{
-				var _event = new JObject();
-				_event["TITLE"] = "Test Event";
-				_event["LOCATION"] = "Somewhere";
-				_event["DETAILS"] = "Details";
-				_event["START_DATE_UTC"] = "2014-07-12 12:00:00";
-				_event["END_DATE_UTC"] = "2014-07-12 13:00:00";
-				_event["OWNER_USER_ID"] = user_id;
-				_event["ALL_DAY"] = false;
-				_event["PUBLICLY_VISIBLE"] = true;
-				_event = this.AddEvent(_event);
+			try
+			{
+				var _event = new JObject
+				{
+					["TITLE"] = "Test Event",
+					["LOCATION"] = "Somewhere",
+					["DETAILS"] = "Details",
+					["START_DATE_UTC"] = "2014-07-12 12:00:00",
+					["END_DATE_UTC"] = "2014-07-12 13:00:00",
+					["OWNER_USER_ID"] = userId,
+					["ALL_DAY"] = false,
+					["PUBLICLY_VISIBLE"] = true
+				};
+				_event = await AddEventAsync(_event);
 				Console.WriteLine("PASS: AddEvent");
-				passed += 1;
-				
+
 				// Test DeleteEvent()
-				try{
-					this.DeleteEvent(_event["EVENT_ID"].Value<int>());
+				try
+				{
+					await DeleteEventAsync(_event["EVENT_ID"].Value<int>());
 					Console.WriteLine("PASS: DeleteEvent()");
-					passed += 1;
 				}
-				catch(Exception){
+				catch (Exception)
+				{
 					Console.WriteLine("FAIL: DeleteEvent()");
 					failed += 1;
 				}
 			}
-			catch(Exception){
+			catch (Exception)
+			{
 				Console.WriteLine("FAIL: AddEvent");
 				failed += 1;
 			}
-			
+
 			// Test GetFileCategories()
-			try{
-				var categories = this.GetFileCategories();
+			try
+			{
+				var categories = await GetFileCategoriesAsync();
 				Console.WriteLine("PASS: GetFileCategories(), found " + categories.Count + " categories.");
-				passed += 1;
 			}
-			catch(Exception){
+			catch (Exception)
+			{
 				Console.WriteLine("FAIL: GetFileCategories()");
 				failed += 1;
 			}
-			
+
 			// Test AddFileCategory()
-			try{
-				var category = new JObject();
-				category["CATEGORY_NAME"] = "Test Category";
-				category["ACTIVE"] = true;
-				category["BACKGROUND_COLOR"] = "000000";
-				category = this.AddFileCategory(category);
+			try
+			{
+				var category = new JObject
+				{
+					["CATEGORY_NAME"] = "Test Category",
+					["ACTIVE"] = true,
+					["BACKGROUND_COLOR"] = "000000"
+				};
+				category = await AddFileCategoryAsync(category);
 				Console.WriteLine("PASS: AddFileCategory()");
-				passed += 1;
-				
+
 				// Test DeleteFileCategory()
-				try{
-					var category_id = category["CATEGORY_ID"].Value<int>();
-					this.DeleteFileCategory(category_id);
+				try
+				{
+					var categoryId = category["CATEGORY_ID"].Value<int>();
+					await DeleteFileCategoryAsync(categoryId);
 					Console.WriteLine("PASS: DeleteFileCategory()");
-					passed += 1;
 				}
-				catch(Exception){
+				catch (Exception)
+				{
 					Console.WriteLine("FAIL: DeleteFileCategory()");
 					failed += 1;
 				}
 			}
-			catch(Exception){
+			catch (Exception)
+			{
 				Console.WriteLine("FAIL: AddFileCategory()");
 				failed += 1;
 			}
-			
+
 			// Test GetNotes()
-			try{
-				var notes = this.GetNotes();
+			try
+			{
+				var notes = await GetNotesAsync();
 				Console.WriteLine("PASS: GetNotes(), found " + notes.Count + " notes.");
-				passed += 1;
 			}
-			catch(Exception){
+			catch (Exception)
+			{
 				Console.WriteLine("FAIL: GetNotes()");
 				failed += 1;
 			}
-			
+
 			// Test GetOpportunities
-			try{
-				var opportunities = this.GetOpportunities(order_by: "DATE_UPDATED_UTC desc", top: top);
+			try
+			{
+				var opportunities = await GetOpportunitiesAsync(orderBy: "DATE_UPDATED_UTC desc", top: top);
 				Console.WriteLine("PASS: GetOpportunities(), found " + opportunities.Count + " opportunities.");
-				passed += 1;
-				
-				if(opportunities.Count > 0){
+
+				if (opportunities.Count > 0)
+				{
 					var opportunity = opportunities[0];
-					int opportunity_id = opportunity["OPPORTUNITY_ID"].Value<int>();
-					
+					int opportunityId = opportunity["OPPORTUNITY_ID"].Value<int>();
+
 					// Test GetOpportunityEmails()
-					try{
-						var emails = this.GetOpportunityEmails(opportunity_id);
+					try
+					{
+						var emails = await GetOpportunityEmailsAsync(opportunityId);
 						Console.WriteLine("PASS: GetOpportunityEmails(), found " + emails.Count + " emails.");
-						passed += 1;
 					}
-					catch(Exception){
+					catch (Exception)
+					{
 						Console.WriteLine("FAIL: GetOpportunityEmails()");
 						failed += 1;
 					}
-					
+
 					// Test GetOpportunityNotes()
-					try{
-						var notes = this.GetOpportunityNotes(opportunity_id);
+					try
+					{
+						var notes = await GetOpportunityNotesAsync(opportunityId);
 						Console.WriteLine("PASS: GetOpportunityNotes(), found " + notes.Count + " notes.");
-						passed += 1;
 					}
-					catch(Exception){
+					catch (Exception)
+					{
 						Console.WriteLine("FAIL: GetOpportunityNotes()");
 						failed += 1;
 					}
-					
+
 					// Test GetOpportunityTasks()
-					try{
-						var tasks = this.GetOpportunityTasks(opportunity_id);
+					try
+					{
+						var tasks = await GetOpportunityTasksAsync(opportunityId);
 						Console.WriteLine("PASS: GetOpportunityTasks(), found " + tasks.Count + " tasks.");
-						passed += 1;
 					}
-					catch(Exception){
+					catch (Exception)
+					{
 						Console.WriteLine("FAIL: GetOpportunityTasks()");
 						failed += 1;
 					}
-					
+
 					// Test GetOpportunityStateHistory()
-					try{
-						var history = this.GetOpportunityStateHistory(opportunity_id);
+					try
+					{
+						var history = await GetOpportunityStateHistoryAsync(opportunityId);
 						Console.WriteLine("PASS: GetOpportunityStateHistory(), found " + history.Count + " states in history.");
-						passed += 1;
 					}
-					catch(Exception){
+					catch (Exception)
+					{
 						Console.WriteLine("FAIL: GetOpportunityStateHistory()");
 						failed += 1;
 					}
 				}
 			}
-			catch(Exception){
+			catch (Exception)
+			{
 				Console.WriteLine("FAIL: GetOpportunities()");
 				failed += 1;
 			}
-			
+
 			// Test GetOpportunityCategories()
-			try{
-				var categories = this.GetOpportunityCategories();
+			try
+			{
+				var categories = await GetOpportunityCategoriesAsync();
 				Console.WriteLine("PASS: GetOpportunityCategories(), found " + categories.Count + " categories.");
-				passed += 1;				
 			}
-			catch(Exception){
+			catch (Exception)
+			{
 				Console.WriteLine("FAIL: GetOpportunityCategories()");
 				failed += 1;
 			}
-			
+
 			// Test AddOpportunityCategory()
-			try{
-				var category = new JObject();
-				category["CATEGORY_NAME"] = "Test Category";
-				category["ACTIVE"] = true;
-				category["BACKGROUND_COLOR"] = "000000";
-				category = this.AddFileCategory(category);
+			try
+			{
+				var category = new JObject
+				{
+					["CATEGORY_NAME"] = "Test Category",
+					["ACTIVE"] = true,
+					["BACKGROUND_COLOR"] = "000000"
+				};
+				category = await AddFileCategoryAsync(category);
 				Console.WriteLine("PASS: AddOpportuntityCategory()");
-				passed += 1;
-				
+
 				// Test DeleteOpportunityCategory()
-				try{
-					this.DeleteOpportunityCategory(category["CATEGORY_ID"].Value<int>());
+				try
+				{
+					await DeleteOpportunityCategoryAsync(category["CATEGORY_ID"].Value<int>());
 					Console.WriteLine("PASS: DeleteOpportunityCategory()");
-					passed += 1;
 				}
-				catch(Exception){
+				catch (Exception)
+				{
 					Console.WriteLine("FAIL: DeleteOpportunityCategory()");
 					failed += 1;
 				}
 			}
-			catch(Exception){
+			catch (Exception)
+			{
 				Console.WriteLine("FAIL: AddOpportunityCategory()");
 				failed += 1;
 			}
-			
+
 			// Test GetOpportunityStateReasons()
-			try{
-				var reasons = this.GetOpportunityStateReasons();
+			try
+			{
+				var reasons = await GetOpportunityStateReasonsAsync();
 				Console.WriteLine("PASS: GetOpportunityStateReasons(), found " + reasons.Count + " reasons.");
-				passed += 1;
 			}
-			catch(Exception){
+			catch (Exception)
+			{
 				Console.WriteLine("FAIL: GetOpportunityStateReasons()");
 				failed += 1;
 			}
-			
+
 			// Test GetOrganizations()
-			try{
-				var organizations = this.GetOrganizations(top: top, order_by: "DATE_UPDATED_UTC desc");
+			try
+			{
+				var organizations = await GetOrganizationsAsync(top: top, orderBy: "DATE_UPDATED_UTC desc");
 				Console.WriteLine("PASS: GetOrganizations(), found " + organizations.Count + " organizations.");
-				passed += 1;
-				
-				if(organizations.Count > 0){
+
+				if (organizations.Count > 0)
+				{
 					var organization = organizations[0];
-					int organization_id = organization["ORGANISATION_ID"].Value<int>();
-					
+					long organizationId = organization.Id;
+
 					// Test GetOrganizationEmails();
-					try{
-						var emails = this.GetOrganizationEmails(organization_id);
+					try
+					{
+						var emails = await GetOrganizationEmailsAsync(organizationId);
 						Console.WriteLine("PASS: GetOrganizationEmails(), found " + emails.Count + " emails.");
-						passed += 1;
 					}
-					catch(Exception){
+					catch (Exception)
+					{
 						Console.WriteLine("FAIL: GetOrganizationEmails()");
 						failed += 1;
 					}
-					
+
 					// Test GetOrganizationNotes();
-					try{
-						var notes = this.GetOrganizationNotes(organization_id);
+					try
+					{
+						var notes = await GetOrganizationNotesAsync(organizationId);
 						Console.WriteLine("PASS: GetOrganizationNotes(), found " + notes.Count + " notes.");
-						passed += 1;
 					}
-					catch(Exception){
+					catch (Exception)
+					{
 						Console.WriteLine("FAIL: GetOrganizationNotes()");
 						failed += 1;
 					}
-					
+
 					// Test GetOrganizationTasks();
-					try{
-						var tasks = this.GetOrganizationTasks(organization_id);
+					try
+					{
+						var tasks = await GetOrganizationTasksAsync(organizationId);
 						Console.WriteLine("PASS: GetOrganizationTasks(), found " + tasks.Count + " tasks.");
-						passed += 1;
 					}
-					catch(Exception){
+					catch (Exception)
+					{
 						Console.WriteLine("FAIL: GetOrganizationTasks()");
 						failed += 1;
 					}
 				}
 			}
-			catch(Exception){
+			catch (Exception)
+			{
 				Console.WriteLine("FAIL: GetOrganizations()");
 				failed += 1;
 			}
-			
+
 			// Test AddOrganization
-			try{
-				var organization = new JObject();
-				organization["ORGANISATION_NAME"] = "Foo Corp";
-				organization["BACKGROUND"] = "Details";
-				organization = this.AddOrganization(organization);
+			try
+			{
+				var organization = new JObject
+				{
+					["ORGANISATION_NAME"] = "Foo Corp",
+					["BACKGROUND"] = "Details"
+				};
+				organization = await AddOrganizationAsync(organization);
 				Console.WriteLine("PASS: AddOrganization()");
-				passed += 1;
-				
+
 				// Test DeleteOrganization()
-				try{
-					this.DeleteOrganization(organization["ORGANISATION_ID"].Value<int>());
+				try
+				{
+					await DeleteOrganizationAsync(organization["ORGANISATION_ID"].Value<int>());
 					Console.WriteLine("PASS: DeleteOrganization()");
-					passed += 1;
 				}
-				catch(Exception){
+				catch (Exception)
+				{
 					Console.WriteLine("FAIL: DeleteOrganization()");
 					failed += 1;
 				}
 			}
-			catch(Exception){
+			catch (Exception)
+			{
 				Console.WriteLine("FAIL: AddOrganization()");
 				failed += 1;
 			}
-			
+
 			// Test GetPipelines()
-			try{
-				var pipelines = this.GetPipelines();
+			try
+			{
+				var pipelines = await GetPipelinesAsync();
 				Console.WriteLine("PASS: GetPipelines(), found " + pipelines.Count + " pipelines.");
-				passed += 1;
-			}catch(Exception){
+			}
+			catch (Exception)
+			{
 				Console.WriteLine("FAIL: GetPipelines()");
 				failed += 1;
 			}
-			
+
 			// Test GetPipelineStages()
-			try{
-				var stages = this.GetPipelineStages();
+			try
+			{
+				var stages = await GetPipelineStagesAsync();
 				Console.WriteLine("PASS: GetPipelineStages(), found " + stages.Count + " pipeline stages.");
-				passed += 1;
 			}
-			catch(Exception){
+			catch (Exception)
+			{
 				Console.WriteLine("FAIL: GetPipelineStages()");
 				failed += 1;
 			}
-			
+
 			// Test GetProjects()
-			try{
-				var projects = this.GetProjects(top: top, order_by: "DATE_UPDATED_UTC desc");
+			try
+			{
+				var projects = await GetProjectsAsync(top: top, orderBy: "DATE_UPDATED_UTC desc");
 				Console.WriteLine("PASS: GetProjects(), found " + projects.Count + " projects.");
-				passed += 1;
-				
-				if(projects.Count > 0){
+
+				if (projects.Count > 0)
+				{
 					var project = projects[0];
-					int project_id = project["PROJECT_ID"].Value<int>();
-					
+					long projectId = project.Id;
+
 					// Test GetProjectEmails
-					try{
-						var emails = this.GetProjectEmails(project_id);
+					try
+					{
+						var emails = await GetProjectEmailsAsync(projectId);
 						Console.WriteLine("PASS: GetProjectEmails(), found " + emails.Count + " emails.");
-						passed += 1;
 					}
-					catch(Exception){
+					catch (Exception)
+					{
 						Console.WriteLine("FAIL: GetProjectEmails()");
 						failed += 1;
 					}
-					
+
 					// Test GetProjectNotes
-					try{
-						var notes = this.GetProjectNotes(project_id);
+					try
+					{
+						var notes = await GetProjectNotesAsync(projectId);
 						Console.WriteLine("PASS: GetProjectNotes(), found " + notes.Count + " notes.");
-						passed += 1;
 					}
-					catch(Exception){
+					catch (Exception)
+					{
 						Console.WriteLine("FAIL: GetProjectNotes()");
 						failed += 1;
 					}
-					
+
 					// Test GetProjectTasks
-					try{
-						var emails = this.GetProjectTasks(project_id);
+					try
+					{
+						var emails = await GetProjectTasksAsync(projectId);
 						Console.WriteLine("PASS: GetProjectTasks(), found " + emails.Count + " tasks.");
-						passed += 1;
 					}
-					catch(Exception){
+					catch (Exception)
+					{
 						Console.WriteLine("FAIL: GetProjectTasks()");
 						failed += 1;
 					}
 				}
 			}
-			catch(Exception){
+			catch (Exception)
+			{
 				Console.WriteLine("FAIL: GetProjects()");
 				failed += 1;
 			}
-			
+
 			// Test GetProjectCategories
-			try{
-				var categories = this.GetProjectCategories();
+			try
+			{
+				var categories = await GetProjectCategoriesAsync();
 				Console.WriteLine("PASS: GetProjectCategories(), found " + categories.Count + " categories.");
-				passed += 1;
 			}
-			catch(Exception){
+			catch (Exception)
+			{
 				Console.WriteLine("FAIL: GetProjectCategories()");
 				failed += 1;
 			}
-			
+
 			// Test AddProjectCategory()
-			try{
-				var category = new JObject();
-				category["CATEGORY_NAME"] = "Test Category";
-				category["ACTIVE"] = true;
-				category["BACKGROUND_COLOR"] = "000000";
-				category = this.AddProjectCategory(category);
+			try
+			{
+				var category = new JObject
+				{
+					["CATEGORY_NAME"] = "Test Category",
+					["ACTIVE"] = true,
+					["BACKGROUND_COLOR"] = "000000"
+				};
+				category = await AddProjectCategoryAsync(category);
 				Console.WriteLine("PASS: AddProjectCategory()");
-				passed += 1;
-				
+
 				// Test DeleteProjectCategory()
-				try{
-					this.DeleteProjectCategory(category["CATEGORY_ID"].Value<int>());
+				try
+				{
+					await DeleteProjectCategoryAsync(category["CATEGORY_ID"].Value<int>());
 					Console.WriteLine("PASS: DeleteProjectCategory()");
-					passed += 1;
 				}
-				catch(Exception){
+				catch (Exception)
+				{
 					Console.WriteLine("FAIL: DeleteProjectCategory()");
 					failed += 1;
 				}
 			}
-			catch(Exception){
+			catch (Exception)
+			{
 				Console.WriteLine("FAIL: AddProjectCategory()");
 				failed += 1;
 			}
-			
-			// Test GetRelationships()
-			try{
-				var relationships = this.GetRelationships();
-				Console.WriteLine("PASS: getRelationships(), found " + relationships.Count + " relationships.");
-				passed += 1;
-			}
-			catch(Exception){
-				Console.WriteLine("FAIL: GetTasks()");
-				failed += 1;
-			}
-			
-			// Test GetTasks()
-			try{
-				var tasks = this.GetTasks(top: top, order_by: "DUE_DATE desc");
-				Console.WriteLine("PASS: GetTasks(), found " + tasks.Count + " tasks.");
-				passed += 1;
-			}
-			catch(Exception){
-				Console.WriteLine("FAIL: GetTasks()");
-				failed += 1;
-			}
-			
-			// Test GetTeams
-			try{
-				var teams = this.GetTeams();
-				Console.WriteLine("PASS: GetTeams(), found " + teams.Count + " teams.");
-				passed += 1;
 
-				if(teams.Count > 0){
+			// Test GetRelationships()
+			try
+			{
+				var relationships = await GetRelationshipsAsync();
+				Console.WriteLine("PASS: getRelationships(), found " + relationships.Count + " relationships.");
+			}
+			catch (Exception)
+			{
+				Console.WriteLine("FAIL: GetTasks()");
+				failed += 1;
+			}
+
+			// Test GetTasks()
+			try
+			{
+				var tasks = await GetTasksAsync(top: top, orderBy: "DUE_DATE desc");
+				Console.WriteLine("PASS: GetTasks(), found " + tasks.Count + " tasks.");
+			}
+			catch (Exception)
+			{
+				Console.WriteLine("FAIL: GetTasks()");
+				failed += 1;
+			}
+
+			// Test GetTeams
+			try
+			{
+				var teams = await GetTeamsAsync();
+				Console.WriteLine("PASS: GetTeams(), found " + teams.Count + " teams.");
+
+				if (teams.Count > 0)
+				{
 					var team = teams[0];
-					
+
 					// Test GetTeamMembers
-					try{
-						var team_members = this.GetTeamMembers(team["TEAM_ID"].Value<int>());
-						Console.WriteLine("PASS: GetTeamMembers(), found " + team_members.Count + " team members.");
-						passed += 1;
+					try
+					{
+						var teamMembers = await GetTeamMembersAsync(team["TEAM_ID"].Value<int>());
+						Console.WriteLine("PASS: GetTeamMembers(), found " + teamMembers.Count + " team members.");
 					}
-					catch(Exception){
+					catch (Exception)
+					{
 						Console.WriteLine("FAIL: GetTeamMembers()");
 						failed += 1;
 					}
 				}
 			}
-			catch(Exception){
+			catch (Exception)
+			{
 				Console.WriteLine("FAIL: GetTeams()");
 				failed += 1;
 			}
-			
-			if(failed > 0){
+
+			if (failed > 0)
+			{
 				throw new Exception(failed + " Tests failed!");
 			}
-			
+
 			Console.WriteLine("All tests passed!");
 		}
-		
+
 		/// <summary>
 		/// Adds OData query parameters to request.
 		/// </summary>
@@ -2032,30 +2155,35 @@ namespace InsightlySDK{
 		/// <param name='skip'>
 		/// (Optional) If provided, specified the number of items to skip.
 		/// </param>
-		/// <param name='order_by'>
+		/// <param name='orderBy'>
 		/// (Optional) If provided, results will be order by specified field(s).
 		/// </param>
 		/// <param name='filters'>
 		/// A list of filters to apply.
 		/// </param>
-		private InsightlyRequest BuildODataQuery(InsightlyRequest request, int? top=null, int? skip=null,
-		                                         string order_by=null, List<string> filters=null){
-			if(top != null){
+		private InsightlyRequest BuildODataQuery(
+			InsightlyRequest request, int? top = null, int? skip = null, string orderBy = null, List<string> filters = null)
+		{
+			if (top != null)
+			{
 				request.Top(top.Value);
 			}
-			if(skip != null){
+			if (skip != null)
+			{
 				request.Skip(skip.Value);
 			}
-			if(order_by != null){
-				request.OrderBy(order_by);
+			if (orderBy != null)
+			{
+				request.OrderBy(orderBy);
 			}
-			if(filters != null){
+			if (filters != null)
+			{
 				request.Filters(filters);
 			}
-			
+
 			return request;
 		}
-		
+
 		/// <summary>
 		/// Check if <c>id</c> represents a valid object id.
 		/// </summary>
@@ -2065,31 +2193,35 @@ namespace InsightlySDK{
 		/// <param name='id'>
 		/// JToken object representing the object id to check.
 		/// </param>
-		private bool IsValidId(JToken id){
-			return ((id != null) && (id.Value<int>() > 0));
-		}
-		
-		private InsightlyRequest Get(string url_path){
-			return new InsightlyRequest(this.api_key, url_path);
-		}
-		
-		private InsightlyRequest Put(string url_path){
-			return (new InsightlyRequest(this.api_key, url_path)).WithMethod(HTTPMethod.PUT);
-		}
-		
-		private InsightlyRequest Post(string url_path){
-			return (new InsightlyRequest(this.api_key, url_path)).WithMethod(HTTPMethod.POST);
+		private bool IsValidId(JToken id)
+		{
+			return (id != null) && id.Value<int>() > 0;
 		}
 
-		private InsightlyRequest Delete(string url_path){
-			return (new InsightlyRequest(this.api_key, url_path)).WithMethod(HTTPMethod.DELETE);
-		}
-		
-		private InsightlyRequest Request(string url_path){
-			return new InsightlyRequest(this.api_key, url_path);
+		private InsightlyRequest Get(string urlPath)
+		{
+			return new InsightlyRequest(_apiKey, urlPath);
 		}
 
-		private String api_key;
+		private InsightlyRequest Put(string urlPath)
+		{
+			return (new InsightlyRequest(_apiKey, urlPath)).WithMethod(HttpMethod.Put);
+		}
+
+		private InsightlyRequest Post(string urlPath)
+		{
+			return (new InsightlyRequest(_apiKey, urlPath)).WithMethod(HttpMethod.Post);
+		}
+
+		private InsightlyRequest Delete(string urlPath)
+		{
+			return (new InsightlyRequest(_apiKey, urlPath)).WithMethod(HttpMethod.Delete);
+		}
+
+		private InsightlyRequest Request(string urlPath)
+		{
+			return new InsightlyRequest(_apiKey, urlPath);
+		}
 	}
 }
 

@@ -3,89 +3,110 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Text;
+using System.Threading.Tasks;
 using Newtonsoft.Json;
 
 namespace InsightlySDK
 {
-	public enum HTTPMethod
+	public enum HttpMethod
 	{
-		GET,
-		PUT,
-		POST,
-		DELETE
+		Get,
+		Put,
+		Post,
+		Delete
 	}
 
 	public class InsightlyRequest
 	{
-		public InsightlyRequest(string api_key, string url_path)
+		private const string BASE_URL = "https://api.insight.ly";
+		private HttpMethod _method;
+		private readonly string _apiKey;
+		private readonly string _urlPath;
+		private readonly List<string> _queryParams;
+		private string _body;
+
+		public InsightlyRequest(string apiKey, string urlPath)
 		{
-			this.method = HTTPMethod.GET;
-			this.api_key = api_key;
-			this.url_path = url_path;
-			this.query_params = new List<string>();
+			_method = HttpMethod.Get;
+			_apiKey = apiKey;
+			_urlPath = urlPath;
+			_queryParams = new List<string>();
 		}
 
-		public Stream AsInputStream()
+		public async Task<Stream> AsInputStreamAsync()
 		{
-			var url = new UriBuilder(BASE_URL);
-			url.Path = this.url_path;
-			url.Query = this.QueryString;
+			var url = new UriBuilder(BASE_URL)
+			{
+				Path = _urlPath,
+				Query = QueryString
+			};
 
 			var request = WebRequest.Create(url.ToString());
-			request.Method = this.method.ToString();
+			request.Method = _method.ToString();
 
-			var credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes(api_key + ":"));
+			var credentials = Convert.ToBase64String(Encoding.ASCII.GetBytes(_apiKey + ":"));
 			request.Headers.Add("Authorization", "Basic " + credentials);
 
-			if (this.body != null)
+			if (_body != null)
 			{
-				request.ContentLength = Encoding.UTF8.GetByteCount(this.body);
+				request.ContentLength = Encoding.UTF8.GetByteCount(_body);
 				request.ContentType = "application/json";
 				var writer = new StreamWriter(request.GetRequestStream());
-				writer.Write(this.body);
+				writer.Write(_body);
 				writer.Flush();
 				writer.Close();
 			}
 
-			var response = request.GetResponse();
+			var response = await GetResponseAsync(request);
 			return response.GetResponseStream();
 		}
 
-		public Object AsJson()
+		public static Task<Stream> GetRequestStreamAsync(WebRequest request)
 		{
-			return this.AsJson<Object>();
+			return Task<Stream>.Factory.FromAsync(request.BeginGetRequestStream, request.EndGetRequestStream, null);
+		}
+		public static Task<WebResponse> GetResponseAsync(WebRequest request)
+		{
+			return Task<WebResponse>.Factory.FromAsync(request.BeginGetResponse, request.EndGetResponse, null);
 		}
 
-		public T AsJson<T>()
+		public async Task<object> AsJsonAsync()
 		{
-			return JsonConvert.DeserializeObject<T>(this.AsString());
+			return await AsJsonAsync<Object>();
 		}
 
-		public string AsString()
+		public async Task<T> AsJsonAsync<T>()
 		{
-			return (new StreamReader(this.AsInputStream())).ReadToEnd();
+			var asString = await AsStringAsync();
+			return JsonConvert.DeserializeObject<T>(asString);
+		}
+
+		public async Task<string> AsStringAsync()
+		{
+			var stream = await AsInputStreamAsync();
+			return await new StreamReader(stream).ReadToEndAsync();
 		}
 
 		public InsightlyRequest WithBody(string contents)
 		{
-			this.body = contents;
+			_body = contents;
 			return this;
 		}
 
 		public InsightlyRequest WithBody<T>(T body)
 		{
-			return this.WithBody(JsonConvert.SerializeObject(body));
+			return WithBody(JsonConvert.SerializeObject(body));
 		}
 
 		public InsightlyRequest WithQueryParam(string name, string value)
 		{
-			this.query_params.Add(Uri.EscapeDataString(name) + "=" + Uri.EscapeDataString(value));
+			_queryParams.Add(Uri.EscapeDataString(name) + "=" + Uri.EscapeDataString(value));
 			return this;
 		}
 
 		public InsightlyRequest WithQueryParam(string name, int val)
 		{
-			this.WithQueryParam(name, val.ToString());
+			WithQueryParam(name, val.ToString());
 			return this;
 		}
 
@@ -93,14 +114,14 @@ namespace InsightlySDK
 		{
 			foreach (var val in values)
 			{
-				this.WithQueryParam(name, val);
+				WithQueryParam(name, val);
 			}
 			return this;
 		}
 
-		public InsightlyRequest WithMethod(HTTPMethod method)
+		public InsightlyRequest WithMethod(HttpMethod method)
 		{
-			this.method = method;
+			_method = method;
 			return this;
 		}
 
@@ -109,29 +130,29 @@ namespace InsightlySDK
 
 		public InsightlyRequest Top(int n)
 		{
-			return this.WithQueryParam("top", n.ToString());
+			return WithQueryParam("top", n.ToString());
 		}
 
 		public InsightlyRequest Skip(int n)
 		{
-			return this.WithQueryParam("skip", n.ToString());
+			return WithQueryParam("skip", n.ToString());
 		}
 
-		public InsightlyRequest OrderBy(string order_by)
+		public InsightlyRequest OrderBy(string orderBy)
 		{
-			return this.WithQueryParam("orderby", order_by);
+			return WithQueryParam("orderby", orderBy);
 		}
 
 		public InsightlyRequest Filter(string filter)
 		{
-			return this.WithQueryParam("filter", filter);
+			return WithQueryParam("filter", filter);
 		}
 
 		public InsightlyRequest Filters(ICollection<string> filters)
 		{
 			foreach (var filter in filters)
 			{
-				this.Filter(filter);
+				Filter(filter);
 			}
 			return this;
 		}
@@ -140,22 +161,12 @@ namespace InsightlySDK
 		{
 			get
 			{
-				if (query_params.Count > 0)
+				if (_queryParams.Count > 0)
 				{
-					return String.Join("&", query_params);
+					return String.Join("&", _queryParams);
 				}
-				else
-				{
-					return "";
-				}
+				return "";
 			}
 		}
-
-		private const string BASE_URL = "https://api.insight.ly";
-		private HTTPMethod method;
-		private string api_key;
-		private string url_path;
-		private List<string> query_params;
-		private string body;
 	}
 }
